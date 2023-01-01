@@ -2,7 +2,7 @@ package ecc
 
 import math.floorMod
 
-case class FieldElement[P <: Int](val num: Int)(using ev: ValueOf[P]):
+final case class FieldElement[P <: Int](val num: Int)(using ev: ValueOf[P]):
   assert(num >= 0 && num < prime, s"Num ${num} not in field range 0 to ${prime - 1}")
 
   def prime: Int = valueOf[P]
