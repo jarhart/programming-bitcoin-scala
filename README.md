@@ -1,6 +1,9 @@
-## sbt project compiled with Scala 3
+# Programming Bitcoin in Scala
 
-### Usage
+Exercises from [Programming Bitcoin](https://www.oreilly.com/library/view/programming-bitcoin/9781492031482/)
+but in Scala.
+
+## Usage
 
 This is a normal sbt project. You can compile code with `sbt compile`, run it with `sbt run`, and `sbt console` will start a Scala 3 REPL.
 
