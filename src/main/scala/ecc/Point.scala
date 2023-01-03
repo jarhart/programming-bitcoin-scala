@@ -1,30 +1,40 @@
 package ecc
 
-sealed trait Point[A <: Int, B <: Int](using evA: ValueOf[A], evB: ValueOf[B]):
+import scala.annotation.tailrec
 
-  def a: Int = valueOf[A]
-  def b: Int = valueOf[B]
+sealed trait Point[C : Coordinate, A <: C : ValueOf, B <: C : ValueOf]:
+
+  def a: C = valueOf[A]
+  def b: C = valueOf[B]
 
   def isAtInfinity: Boolean
 
-  def +(that: Point[A, B]): Point[A, B]
+  def +(that: Point[C, A, B]): Point[C, A, B]
+
+  def rmul(s: BigInt): Point[C, A, B]
 
 object Point:
-  def atInfinity[A <: Int, B <: Int](using evA: ValueOf[A], evB: ValueOf[B]): Point[A, B] =
+  def atInfinity[C : Coordinate, A <: C : ValueOf, B <: C : ValueOf]: Point[C, A, B] =
     PointAtInfinity()
 
-  def apply[A <: Int, B <: Int](x: Int, y: Int)(using evA: ValueOf[A], evB: ValueOf[B]): Point[A, B] =
+  def apply[C : Coordinate, A <: C : ValueOf, B <: C : ValueOf](x: C, y: C): Point[C, A, B] =
     NonZeroPoint(x, y)
 
-final case class PointAtInfinity[A <: Int, B <: Int]()(using evA: ValueOf[A], evB: ValueOf[B]) extends Point[A, B]:
-  override def isAtInfinity = true
-  override def +(that: Point[A, B]) = that
+  given pointRMul[C : Coordinate, A <: C : ValueOf, B <: C : ValueOf]: RMul[Point[C, A, B]] with
+    def rmul(coeff: BigInt, p: Point[C, A, B]) = p.rmul(coeff)
 
-final case class NonZeroPoint[A <: Int, B <: Int](x: Int, y: Int)(using evA: ValueOf[A], evB: ValueOf[B]) extends Point[A, B]:
-  assert(pow(y, 2) == pow(x, 3) + a * x + b, s"(${x}, ${y}) is not on the curve")
+
+final case class PointAtInfinity[C : Coordinate, A <: C : ValueOf, B <: C : ValueOf]() extends Point[C, A, B]:
+  override def isAtInfinity = true
+  override def +(that: Point[C, A, B]) = that
+  override def rmul(s: BigInt) = this
+
+
+final case class NonZeroPoint[C : Coordinate, A <: C : ValueOf, B <: C : ValueOf](x: C, y: C) extends Point[C, A, B]:
+  require(y.pow(2) == x.pow(3) + a * x + b, s"(${x}, ${y}) is not on the curve")
   override def isAtInfinity = false
 
-  override def +(that: Point[A, B]) = that match {
+  override def +(that: Point[C, A, B]) = that match {
 
     case PointAtInfinity() => this
 
@@ -44,3 +54,8 @@ final case class NonZeroPoint[A <: Int, B <: Int](x: Int, y: Int)(using evA: Val
       val y3 = s * (x - x3) - y
       Point(x3, y3)
   }
+
+  override def rmul(s: BigInt) = LazyList
+    .unfold((s, this: Point[C, A, B])) { case (i, c) => Option.when(i > 0) { ((i & 1, c), (i >> 1, c + c)) } }
+    .collect { case (1, c) => c }
+    .foldRight(Point.atInfinity[C, A, B])(_ + _)
