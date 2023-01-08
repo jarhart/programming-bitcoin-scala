@@ -34,8 +34,7 @@ final case class NonZeroPoint[C : Coordinate, A <: C : ValueOf, B <: C : ValueOf
   require(y.pow(2) == x.pow(3) + a * x + b, s"(${x}, ${y}) is not on the curve")
   override def isAtInfinity = false
 
-  override def +(that: Point[C, A, B]) = that match {
-
+  override def +(that: Point[C, A, B]) = that match
     case PointAtInfinity() => this
 
     case NonZeroPoint(`x`, `y`) if y == 0 => Point.atInfinity
@@ -53,7 +52,6 @@ final case class NonZeroPoint[C : Coordinate, A <: C : ValueOf, B <: C : ValueOf
       val x3 = s * s - x - x2
       val y3 = s * (x - x3) - y
       Point(x3, y3)
-  }
 
   override def rmul(s: BigInt) = LazyList
     .unfold((s, this: Point[C, A, B])) { case (i, c) => Option.when(i > 0) { ((i & 1, c), (i >> 1, c + c)) } }

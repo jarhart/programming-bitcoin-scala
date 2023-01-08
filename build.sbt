@@ -9,7 +9,15 @@ lazy val root = project
     scalaVersion := scala3Version,
 
     libraryDependencies ++= Seq(
+      "org.bouncycastle" % "bcprov-jdk15to18" % "1.72",
       "org.scalactic" %% "scalactic" % "3.2.14",
       "org.scalatest" %% "scalatest" % "3.2.14" % "test"
-    )
+    ),
+
+    console / initialCommands := """
+                                |import ecc._
+                                |import java.util.HexFormat
+                                |val hexFormat = HexFormat.of()
+                                |import hexFormat.{formatHex, parseHex}
+                                |""".stripMargin
   )

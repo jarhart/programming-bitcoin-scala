@@ -7,3 +7,7 @@ object S256Field:
   type P = p.type
 
   def apply(num: BigInt): S256Field = FieldElement(num)
+
+  def sqrt(self: S256Field): S256Field = self.pow((p + 1) / 4)
+
+extension (self: S256Field) def sqrt() = S256Field.sqrt(self)

@@ -21,20 +21,25 @@ final case class PrivateKey(secret: BigInt):
     val s = (z + r * secret) * kInv.mod(n)
     Signature(r, if s > n / 2 then n - s else s)
 
+  def wif(compressed: Boolean = true, testnet: Boolean = false) =
+    val secretBytes = toBytes(secret)
+    val prefix = if testnet then 0xef.toByte else 0x80.toByte
+    val suffix: Array[Byte] = if compressed then Array(1) else Array()
+    Base58check.encode(prefix +: (secretBytes ++ suffix))
+
   private def deterministicKeyPair(z: BigInt): (BigInt, BigInt) =
     val k = deterministicK(z)
-    k * g match {
+    k * g match
       case NonZeroPoint(FieldElement(r), _) => k -> r
       case _ => ???
-    }
 
   private def deterministicK(z: BigInt): BigInt =
     if z > n then deterministicK(z - n)
     else
       val k0 = Array.fill[Byte](32)(0)
       val v0 = Array.fill[Byte](32)(1)
-      val zBytes = to32Bytes(z)
-      val secretBytes = to32Bytes(secret)
+      val zBytes = toBytes(z)
+      val secretBytes = toBytes(secret)
       val k1 = hmacSHA256(k0, (v0 :+ (0: Byte)) ++ secretBytes ++ zBytes)
       val v1 = hmacSHA256(k1, v0)
       val k2 = hmacSHA256(k1, (v1 :+ (1: Byte)) ++ secretBytes ++ zBytes)
@@ -43,25 +48,19 @@ final case class PrivateKey(secret: BigInt):
 
   private def detKTail(k: Array[Byte], v: Array[Byte]): BigInt =
     val v1 = hmacSHA256(k, v)
-    BigInt(v1) match {
+    BigInt(v1) match
       case candidate if candidate > 1 && candidate < n =>
         candidate
       case _ =>
         val k2 = hmacSHA256(k, v :+ (0: Byte))
         val v2 = hmacSHA256(k2, v)
         detKTail(k2, v2)
-    }
 
   private def randomKeyPair(rnd: Random = Random): (BigInt, BigInt) =
     val k = randomK(rnd)
-    k * g match {
+    k * g match
       case NonZeroPoint(FieldElement(r), _) => k -> r
       case _ => randomKeyPair(rnd)
-    }
-
-  private def to32Bytes(i: BigInt): Array[Byte] =
-    val bytes = i.toByteArray
-    Array.fill[Byte](32 - bytes.length)(0) ++ bytes
 
 object PrivateKey:
   import S256Point.n
@@ -69,7 +68,6 @@ object PrivateKey:
   def random(rnd: Random = Random) = PrivateKey(randomK(rnd))
 
   private[PrivateKey] def randomK(rnd: Random): BigInt =
-    BigInt(256, rnd) match {
+    BigInt(256, rnd) match
       case i if i < n => i
       case _ => randomK(rnd)
-    }

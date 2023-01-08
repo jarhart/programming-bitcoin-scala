@@ -1,9 +1,13 @@
 package ecc
 
 import org.scalatest.freespec.AnyFreeSpec
+import java.util.HexFormat
 
 class S256PointSpec extends AnyFreeSpec:
-  
+
+  val hexFormat = HexFormat.of()
+  import hexFormat.parseHex
+
   "S256Point" - {
 
     "order of g is n" in {
@@ -41,5 +45,60 @@ class S256PointSpec extends AnyFreeSpec:
         val s = BigInt("c7207fee197d27c618aea621406f6bf5ef6fca38681d82b2f06fddbdce6feab6", 16)
         assert(point.verify(z, Signature(r, s)))
       }
+    }
+
+    val uncompressed = Seq(
+      (BigInt(999).pow(3), "049d5ca49670cbe4c3bfa84c96a8c87df086c6ea6a24ba6b809c9de234496808d56fa15cc7f3d38cda98dee2419f415b7513dde1301f8643cd9245aea7f3f911f9"),
+      (BigInt(123), "04a598a8030da6d86c6bc7f2f5144ea549d28211ea58faa70ebf4c1e665c1fe9b5204b5d6f84822c307e4b4a7140737aec23fc63b65b35f86a10026dbd2d864e6b"),
+      (BigInt(42424242), "04aee2e7d843f7430097859e2bc603abcc3274ff8169c1a469fee0f20614066f8e21ec53f40efac47ac1c5211b2123527e0e9b57ede790c4da1e72c91fb7da54a3"),
+    )
+    
+    val compressed = Seq(
+      (BigInt(999).pow(3), "039d5ca49670cbe4c3bfa84c96a8c87df086c6ea6a24ba6b809c9de234496808d5"),
+      (BigInt(123), "03a598a8030da6d86c6bc7f2f5144ea549d28211ea58faa70ebf4c1e665c1fe9b5"),
+      (BigInt(42424242), "03aee2e7d843f7430097859e2bc603abcc3274ff8169c1a469fee0f20614066f8e"),
+    )
+
+    "sec" - {
+
+      "encodes in the uncompressed SEC format" in {
+        for ((secret, s) <- uncompressed)
+          val point = secret * S256Point.g
+          assert(point.sec(compressed = false).toSeq == parseHex(s).toSeq)
+      }
+
+      "encodes in the compressed SEC format" in {
+        for ((secret, s) <- compressed)
+          val point = secret * S256Point.g
+          assert(point.sec(compressed = true).toSeq == parseHex(s).toSeq)
+      }
+    }
+
+    "parse" - {
+
+      "parses uncompressed SEC format" in {
+        for ((secret, s) <- uncompressed)
+          val point = secret * S256Point.g
+          assert(S256Point.parse(parseHex(s)) == Some(point))
+      }
+
+      "parses compressed SEC format" in {
+        for ((secret, s) <- compressed)
+          val point = secret * S256Point.g
+          assert(S256Point.parse(parseHex(s)) == Some(point))
+      }
+    }
+
+    "address encodes addresses" in {
+      val addresses = Seq(
+        (BigInt(888).pow(3), true, "148dY81A9BmdpMhvYEVznrM45kWN32vSCN", "mieaqB68xDCtbUBYFoUNcmZNwk74xcBfTP"),
+        (BigInt(321), false, "1S6g2xBJSED7Qr9CYZib5f4PYVhHZiVfj", "mfx3y63A7TfTtXKkv7Y6QzsPFY6QCBCXiP"),
+        (BigInt(4242424242L), false, "1226JSptcStqn4Yq9aAmNXdwdc2ixuH9nb", "mgY3bVusRUL6ZB2Ss999CSrGVbdRwVpM8s"),
+      )
+
+      for ((secret, compressed, mainnetAddress, testnetAddress) <- addresses)
+        val point = secret * S256Point.g
+        assert(point.address(compressed=compressed, testnet=false) == mainnetAddress)
+        assert(point.address(compressed=compressed, testnet=true) == testnetAddress)
     }
   }
