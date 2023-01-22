@@ -22,9 +22,9 @@ class PointSpec extends AnyFreeSpec:
       Point[BigInt, A, B](18, 77)
     }
 
-    "operator +" - {
+    "operator + adds points" - {
 
-      "adds points, case 0" in {
+      "case 0" in {
         val a = Point.atInfinity[BigInt, A, B]
         val b = Point[BigInt, A, B](2, 5)
         val c = Point[BigInt, A, B](2, -5)
@@ -33,13 +33,13 @@ class PointSpec extends AnyFreeSpec:
         assert(b + c == a)
       }
 
-      "adds points, case 1" in {
+      "case 1" in {
         val a = Point[BigInt, A, B](3, 7)
         val b = Point[BigInt, A, B](-1, -1)
         assert(a + b == Point[BigInt, A, B](2, -5))
       }
 
-      "adds points, case 2" in {
+      "case 2" in {
         val a = Point[BigInt, A, B](-1, -1)
         assert(a + a == Point[BigInt, A, B](18, 77))
       }

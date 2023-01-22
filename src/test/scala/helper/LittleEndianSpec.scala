@@ -1,9 +1,12 @@
-package ecc
+package helper
 
+import org.scalacheck.Gen
 import org.scalatest.freespec.AnyFreeSpec
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+
 import java.util.HexFormat
 
-class LittleEndianSpec extends AnyFreeSpec:
+class LittleEndianSpec extends AnyFreeSpec with ScalaCheckPropertyChecks:
 
   val hexFormat = HexFormat.of()
   import hexFormat.{formatHex, parseHex}
@@ -26,4 +29,11 @@ class LittleEndianSpec extends AnyFreeSpec:
 
     for ((n, length, expected) <- cases)
       assert(formatHex(LittleEndian.fromInt(n, length)) == expected)
+  }
+
+  "toInt is the inverse of fromInt" in {
+    forAll(Gen.posNum[Long]) { n =>
+      val i = BigInt(n)
+      assert(LittleEndian.toInt(LittleEndian.fromInt(i, 8)) == i)
+    }
   }

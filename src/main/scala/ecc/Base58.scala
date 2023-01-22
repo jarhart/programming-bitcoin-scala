@@ -1,5 +1,6 @@
 package ecc
 
+import helper._
 import java.util.HexFormat
 
 object Base58:

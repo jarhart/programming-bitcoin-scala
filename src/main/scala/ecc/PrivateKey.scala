@@ -1,5 +1,6 @@
 package ecc
 
+import helper._
 import scala.util.Random
 
 final case class PrivateKey(secret: BigInt):

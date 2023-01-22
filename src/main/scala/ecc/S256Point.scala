@@ -1,5 +1,7 @@
 package ecc
 
+import helper._
+
 type S256Point = Point[S256Field, S256Point.A, S256Point.B]
 
 object S256Point:
@@ -42,7 +44,7 @@ object S256Point:
     case _ => ???
 
   def hash160(self: S256Point, compressed: Boolean = true): Array[Byte] =
-    ecc.hash160(sec(self, compressed))
+    helper.hash160(sec(self, compressed))
 
   def address(self: S256Point, compressed: Boolean = true, testnet: Boolean = false) =
     val prefix: Byte = if testnet then 0x6f else 0

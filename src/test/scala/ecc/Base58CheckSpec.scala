@@ -1,9 +1,13 @@
 package ecc
 
+import org.scalacheck.Gen
 import org.scalatest.freespec.AnyFreeSpec
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+
 import java.util.HexFormat
 
-class Base58CheckSpec extends AnyFreeSpec:
+import helper.toBytes
+class Base58CheckSpec extends AnyFreeSpec with ScalaCheckPropertyChecks:
 
   val hexFormat = HexFormat.of()
   import hexFormat.{formatHex, parseHex}
@@ -36,7 +40,9 @@ class Base58CheckSpec extends AnyFreeSpec:
     }
 
     "decode is the inverse of encode" in {
-      val i = BigInt(160, util.Random)
-      assert(BigInt(Base58check.decode(Base58check.encode(toBytes(i, 21)))) == i)
+      forAll(Gen.posNum[Long]) { n =>
+        val i = BigInt(n)
+        assert(BigInt(Base58check.decode(Base58check.encode(toBytes(i, 21)))) == i)
+      }
     }
   }

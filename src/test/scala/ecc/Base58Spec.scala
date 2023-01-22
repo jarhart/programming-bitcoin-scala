@@ -1,8 +1,10 @@
 package ecc
 
+import org.scalacheck.Gen
 import org.scalatest.freespec.AnyFreeSpec
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class Base58Spec extends AnyFreeSpec:
+class Base58Spec extends AnyFreeSpec with ScalaCheckPropertyChecks:
 
   "Base58" - {
     "encode encodes in base58 format" in {
@@ -15,8 +17,10 @@ class Base58Spec extends AnyFreeSpec:
       assert(BigInt(Base58.decode("3HyFRGmiNAk")) == i)
     }
 
-    "encode and decode are symmetric" in {
-      val i = BigInt(160, util.Random)
-      assert(BigInt(Base58.decode(Base58.encode(i.toByteArray))) == i)
+    "decode is the inverse of encode" in {
+      forAll(Gen.posNum[Long]) { n =>
+        val i = BigInt(n)
+        assert(BigInt(Base58.decode(Base58.encode(i.toByteArray))) == i)
+      }
     }
   }
