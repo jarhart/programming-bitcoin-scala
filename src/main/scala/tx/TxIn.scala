@@ -1,7 +1,7 @@
 package tx
 
 import java.util.HexFormat
-import helper.{Parser => P, Serializer => S}
+import helper.{Parser => P, Serializer => S, _}
 
 final case class TxIn(prevTx: Array[Byte], prevIndex: BigInt, scriptSig: Script, sequence: BigInt = BigInt("ffffffff", 16)):
   private val hexFormat = HexFormat.of()
@@ -9,9 +9,9 @@ final case class TxIn(prevTx: Array[Byte], prevIndex: BigInt, scriptSig: Script,
 
   val serialize = for {
     _ <- S.tell(prevTx.reverse)
-    _ <- S.littleEndian(prevIndex, 4)
+    _ <- LittleEndian.serialize(prevIndex, 4)
     _ <- scriptSig.serialize
-    _ <- S.littleEndian(sequence, 4)
+    _ <- LittleEndian.serialize(sequence, 4)
   } yield ()
 
   def fetchTx(testnet: Boolean = false): Tx =
@@ -26,7 +26,7 @@ final case class TxIn(prevTx: Array[Byte], prevIndex: BigInt, scriptSig: Script,
 object TxIn:
   val parse = for {
     prevTx <- P.reverseBytes(32)
-    prevIndex <- P.littleEndian(4)
+    prevIndex <- LittleEndian.parse(4)
     scriptSig <- Script.parse
-    sequence <- P.littleEndian(4)
+    sequence <- LittleEndian.parse(4)
   } yield TxIn(prevTx, prevIndex, scriptSig, sequence)

@@ -1,29 +1,34 @@
 package helper
 
 object VarInt:
+  import helper.{Parser => P, Serializer => S}
 
   private val min2bytes = BigInt(0xfd)
   private val min4bytes = BigInt(2).pow(16)
   private val min8bytes = BigInt(2).pow(32)
   private val minTooBig = BigInt(2).pow(64)
 
-  def read(bytes: LazyList[Byte]): (BigInt, LazyList[Byte]) =
-    unsigned(bytes.head) match
-      case 0xff => bytes.tail.splitAt(8)
-      case 0xfe => bytes.tail.splitAt(4)
-      case 0xfd => bytes.tail.splitAt(2)
-      case _ => bytes.splitAt(1)
-    match
-      case (varIntBytes, rest) => (LittleEndian.toInt(varIntBytes), rest)
+  val parse = for {
+    b <- P.head
+    i <- unsigned(b) match
+      case 0xff => LittleEndian.parse(8)
+      case 0xfe => LittleEndian.parse(4)
+      case 0xfd => LittleEndian.parse(2)
+      case _ => P.pure(BigInt(unsigned(b)))
+  } yield i
 
-  def encode(i: BigInt): Array[Byte] =
+  def serialize(i: BigInt) =
     require(i < minTooBig, s"integer too large: ${i}")
 
     if i < min2bytes then
-      Array(i.toByte)
+      S.tell(i.toByte)
     else if i < min4bytes then
-      0xfd.toByte +: LittleEndian.fromInt(i, 2)
+      S.tell(0xfd.toByte) >> LittleEndian.serialize(i, 2)
     else if i < min8bytes then
-      0xfe.toByte +: LittleEndian.fromInt(i, 4)
+      S.tell(0xfe.toByte) >> LittleEndian.serialize(i, 4)
     else
-      0xff.toByte +: LittleEndian.fromInt(i, 8)
+      S.tell(0xff.toByte) >> LittleEndian.serialize(i, 8)
+
+  def read(bytes: LazyList[Byte]): (BigInt, LazyList[Byte]) = parse.run(bytes)
+
+  def encode(i: BigInt): Array[Byte] = serialize(i).toArray

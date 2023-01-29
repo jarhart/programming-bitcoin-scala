@@ -1,6 +1,6 @@
 package tx
 
-import helper.{Parser => P, Serializer => S}
+import helper.{Parser => P, Serializer => S, _}
 import java.util.HexFormat
 
 import helper.hash256
@@ -13,12 +13,12 @@ final case class Tx(version: BigInt, inputs: Seq[TxIn], outputs: Seq[TxOut], loc
   def hash = hash256(serialize().toArray).reverse
 
   val serialize = for {
-    _ <- S.littleEndian(version, 4)
-    _ <- S.varInt(inputs.length)
+    _ <- LittleEndian.serialize(version, 4)
+    _ <- VarInt.serialize(inputs.length)
     _ <- S.traverse(inputs)(_.serialize)
-    _ <- S.varInt(outputs.length)
+    _ <- VarInt.serialize(outputs.length)
     _ <- S.traverse(outputs)(_.serialize)
-    _ <- S.littleEndian(locktime, 4)
+    _ <- LittleEndian.serialize(locktime, 4)
   } yield ()
 
   def fee: BigInt =
@@ -26,10 +26,10 @@ final case class Tx(version: BigInt, inputs: Seq[TxIn], outputs: Seq[TxOut], loc
 
 object Tx:
   val parse = for {
-    version <- P.littleEndian(4)
-    numInputs <- P.varInt
+    version <- LittleEndian.parse(4)
+    numInputs <- VarInt.parse
     inputs <- P.times(numInputs)(TxIn.parse)
-    numOutputs <- P.varInt
+    numOutputs <- VarInt.parse
     outputs <- P.times(numOutputs)(TxOut.parse)
-    locktime <- P.littleEndian(4)
+    locktime <- LittleEndian.parse(4)
   } yield Tx(version, inputs, outputs, locktime)

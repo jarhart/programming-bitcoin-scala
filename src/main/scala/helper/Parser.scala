@@ -6,23 +6,15 @@ object Parser:
 
   val get = Parser(bytes => (bytes, bytes))
 
+  val head = Parser(bytes => (bytes.head, bytes.tail))
+
   def take(n: Int): Parser[LazyList[Byte]] = Parser(_ splitAt n)
 
-  def peek(n: Int): Parser[LazyList[Byte]] = Parser(bytes => (bytes.take(n), bytes))
-
   def takeBytes(n: Int): Parser[Array[Byte]] = take(n) map (_.toArray)
-
-  def peekBytes(n: Int): Parser[Array[Byte]] = peek(n) map (_.toArray)
 
   def reverseBytes(n: Int): Parser[Array[Byte]] = takeBytes(n) map (_.reverse)
 
   def unsigned(n: Int): Parser[BigInt] = takeBytes(n) map unsignedFromBytes
-
-  def littleEndian(n: Int): Parser[BigInt] = takeBytes(n) map LittleEndian.toInt
-
-  def peekLittleEndian(n: Int): Parser[BigInt] = peekBytes(n) map LittleEndian.toInt
-
-  val varInt = Parser(VarInt.read)
 
   def times[A](n: BigInt)(parser: Parser[A]): Parser[Seq[A]] =
     (BigInt(1) to n foldLeft pure(Seq()))((pAcc, _) =>
