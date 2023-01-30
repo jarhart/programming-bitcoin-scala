@@ -28,7 +28,7 @@ class TxSpec extends AnyFreeSpec with BeforeAndAfterAll:
       assert(tx.inputs.length == 1)
       assert(tx.inputs(0).prevTx.toSeq == expectedPrevTx.toSeq)
       assert(tx.inputs(0).prevIndex == 0)
-      assert(tx.inputs(0).scriptSig.serialize().toSeq == expectedScriptSig.toSeq)
+      assert(tx.inputs(0).scriptSig.serialize.toSeq == expectedScriptSig.toSeq)
       assert(tx.inputs(0).sequence == 0xfffffffeL)
     }
 
@@ -37,10 +37,10 @@ class TxSpec extends AnyFreeSpec with BeforeAndAfterAll:
       assert(tx.outputs.length == 2)
       assert(tx.outputs(0).amount == 32454049)
       val expectedSpk0 = parseHex("1976a914bc3b654dca7e56b04dca18f2566cdaf02e8d9ada88ac")
-      assert(tx.outputs(0).script.serialize().toSeq == expectedSpk0.toSeq)
+      assert(tx.outputs(0).script.serialize.toSeq == expectedSpk0.toSeq)
       assert(tx.outputs(1).amount == 10011545)
       val expectedSpk1 = parseHex("1976a9141c4bc762dd5423e332166702cb75f40df79fea1288ac")
-      assert(tx.outputs(1).script.serialize().toSeq == expectedSpk1.toSeq)
+      assert(tx.outputs(1).script.serialize.toSeq == expectedSpk1.toSeq)
     }
 
     "parses the locktime" in {

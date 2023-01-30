@@ -9,7 +9,7 @@ object Base58:
 
   def encode(bytes: Array[Byte]): String =
     ("1" * bytes.takeWhile(_ == 0).length) ++
-    Stream.unfold(unsignedFromBytes(bytes))(n =>
+    LazyList.unfold(unsignedFromBytes(bytes))(n =>
       Option.when(n > 0)(n /% 58 match
         case (num, mod) => (Alphabet(mod.toInt), num))
     ).foldRight("")((c, result) => result :+ c)

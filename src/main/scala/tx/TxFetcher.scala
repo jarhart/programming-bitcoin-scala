@@ -32,7 +32,7 @@ object TxFetcher:
     cache.addAll(diskCache map { case k -> rawHex => k -> parseTx(LazyList from parseHex(rawHex)) })
 
   def dumpCache(filename: String): Unit =
-    val diskCache = cache map { case k -> tx => k -> formatHex(tx.serialize().toArray) }
+    val diskCache = cache map { case k -> tx => k -> formatHex(tx.serialize.toArray) }
     val writer = PrintWriter(File(filename))
     writer.write(Json.stringify(Json.toJson(diskCache)))
     writer.close()

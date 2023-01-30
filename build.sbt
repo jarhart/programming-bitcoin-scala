@@ -11,12 +11,13 @@ lazy val root = project
     libraryDependencies ++= Seq(
       "org.bouncycastle" % "bcprov-jdk15to18" % "1.72",
       "com.typesafe.play" %% "play-json" % "2.10.0-RC7",
+      "org.typelevel" %% "cats-core" % "2.9.0",
       "org.scalactic" %% "scalactic" % "3.2.14",
       "org.scalatest" %% "scalatest" % "3.2.14" % Test,
-      "org.scalatestplus" %% "scalacheck-1-17" % "3.2.14.0" % Test
+      "org.scalatestplus" %% "scalacheck-1-17" % "3.2.14.0" % Test,
     ),
 
-    scalacOptions += "-deprecation",
+    scalacOptions +=  "-deprecation",
 
     console / initialCommands := """
                                 |import ecc._

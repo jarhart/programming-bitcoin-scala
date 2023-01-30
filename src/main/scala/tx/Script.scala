@@ -1,31 +1,33 @@
 package tx
 
-import helper.{Parser => P, Serializer => S, _}
+import cats.syntax.apply._
+import cats.syntax.traverse._
+import helper._
 
 final case class Script(cmds: Seq[Cmd] = Seq()):
 
   def ++ (that: Script) = Script(this.cmds ++ that.cmds)
 
-  val raw_serialize = S.traverse(cmds) {
+  val rawEncode = cmds traverse {
     case opCode: OpCode =>
-      LittleEndian.serialize(opCode.code, 1)
+      LittleEndian.encode(opCode.code, 1)
 
     case elem: Elem =>
       assert(elem.length <= 520, "too long a cmd")
 
       (
         if elem.length <= 75 then
-          LittleEndian.serialize(elem.length, 1)
+          LittleEndian.encode(elem.length, 1)
         else if elem.length < 0x100 then
-          LittleEndian.serialize(76, 1) >> LittleEndian.serialize(elem.length, 1)
+          LittleEndian.encode(76, 1) *> LittleEndian.encode(elem.length, 1)
         else
-          LittleEndian.serialize(77, 1) >> LittleEndian.serialize(elem.length, 2)
-      ) >> S.tell(elem)
+          LittleEndian.encode(77, 1) *> LittleEndian.encode(elem.length, 2)
+      ) *> Encoder.tell(elem)
   }
 
-  val serialize =
-    val result = raw_serialize()
-    VarInt.serialize(result.length) >> S.tell(result)
+  val encode = VarInt.encode(rawEncode.written.length) *> rawEncode
+
+  def serialize = encode.written.toArray
 
   def evaluate(z: BigInt): Boolean =
     var ctx = Op.Context(List[Elem](), cmds, z, List[Elem]())
@@ -50,22 +52,24 @@ final case class Script(cmds: Seq[Cmd] = Seq()):
 
 object Script:
 
-  private def parsePushData(n: Int): P[Cmd] = for {
-    dataLength <- LittleEndian.parse(n)
-    data <- P.takeBytes(dataLength.toInt)
+  def decodePushData(n: Int): Decoder[Cmd] = for {
+    dataLength <- LittleEndian.decode(n)
+    data <- Bytes take dataLength.toInt
   } yield data
 
-  private val parseCmd: P[Cmd] = for {
-    current <- P.unsigned(1)
+  val decodeCmd: Decoder[Cmd] = for {
+    current <- LittleEndian.decode(1)
     cmd <- current.toInt match {
-      case n if n >= 1 && n <= 75 => P.takeBytes(n)
-      case 76 => parsePushData(1)
-      case 77 => parsePushData(2)
-      case opCode => P.pure(OpCode.fromCode(opCode))
+      case n if n >= 1 && n <= 75 => Bytes take n
+      case 76 => decodePushData(1)
+      case 77 => decodePushData(2)
+      case opCode => Decoder.pure(OpCode.fromCode(opCode))
     }
   } yield cmd
 
-  val parse: P[Script] = for {
-    length <- VarInt.parse
-    cmds <- parseCmd.many(length.toInt)
+  val decode: Decoder[Script] = for {
+    length <- VarInt.decode
+    cmds <- Decoder.many(length.toInt)(decodeCmd)
   } yield Script(cmds)
+
+  val parse = Decoder.run(decode)

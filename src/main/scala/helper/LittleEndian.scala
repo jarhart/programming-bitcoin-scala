@@ -2,9 +2,15 @@ package helper
 
 object LittleEndian:
 
-  def parse(n: Int) = Parser take n map toInt
+  def decode(length: Int): Decoder[BigInt] =
+    Decoder take length map toInt
 
-  def serialize(i: BigInt, length: Int) = Serializer tell fromInt(i, length)
+  def encode(i: BigInt, length: Int) =
+    Encoder tell fromInt(i, length)
+
+  def parse(length: Int) = Decoder.run(decode(length))
+
+  def serialize(i: BigInt, length: Int) = encode(i, length).written.toArray
 
   def toInt(bytes: Iterable[Byte]) = unsignedFromBytes(bytes.toArray.reverse)
 

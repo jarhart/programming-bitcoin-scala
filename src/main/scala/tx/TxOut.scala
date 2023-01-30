@@ -1,15 +1,20 @@
 package tx
 
-import helper.{Parser => P, Serializer => S, _}
+import helper._
 
 final case class TxOut(amount: BigInt, script: Script):
-  def serialize = for {
-    _ <- LittleEndian.serialize(amount, 8)
-    _ <- script.serialize
+
+  val encode = for {
+    _ <- LittleEndian.encode(amount, 8)
+    _ <- script.encode
   } yield ()
 
+  def serialize = encode.written.toArray
+
 object TxOut:
-  val parse: P[TxOut] = for {
-    amount <- LittleEndian.parse(8)
-    script <- Script.parse
+  val decode: Decoder[TxOut] = for {
+    amount <- LittleEndian.decode(8)
+    script <- Script.decode
   } yield TxOut(amount, script)
+
+  val parse = Decoder.run(decode)
