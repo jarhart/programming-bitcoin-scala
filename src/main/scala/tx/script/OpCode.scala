@@ -1,4 +1,4 @@
-package tx
+package tx.script
 
 enum OpCode(val code: Int):
   case OP_0 extends OpCode(0)

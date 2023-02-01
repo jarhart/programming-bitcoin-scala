@@ -1,8 +1,9 @@
 package tx
 
-import cats.syntax.apply._
+import cats.syntax.flatMap._
 import cats.syntax.traverse._
 import helper._
+import script._
 
 final case class Script(cmds: Seq[Cmd] = Seq()):
 
@@ -19,36 +20,18 @@ final case class Script(cmds: Seq[Cmd] = Seq()):
         if elem.length <= 75 then
           LittleEndian.encode(elem.length, 1)
         else if elem.length < 0x100 then
-          LittleEndian.encode(76, 1) *> LittleEndian.encode(elem.length, 1)
+          LittleEndian.encode(76, 1) >> LittleEndian.encode(elem.length, 1)
         else
-          LittleEndian.encode(77, 1) *> LittleEndian.encode(elem.length, 2)
-      ) *> Encoder.tell(elem)
+          LittleEndian.encode(77, 1) >> LittleEndian.encode(elem.length, 2)
+      ) >> Encoder.tell(elem)
   }
 
-  val encode = VarInt.encode(rawEncode.written.length) *> rawEncode
+  val encode = VarInt.encode(rawEncode.written.length) >> rawEncode
 
   def serialize = encode.written.toArray
 
   def evaluate(z: BigInt): Boolean =
-    var ctx = Op.Context(List[Elem](), cmds, z, List[Elem]())
-  
-    while ctx.cmds.nonEmpty do
-      val cmd = ctx.cmds.head
-      ctx = ctx.copy(cmds = cmds.tail)
-
-      cmd match
-        case opCode: OpCode =>
-          Op.get(opCode) flatMap (_ apply ctx) match
-            case Some(newCtx) => ctx = newCtx
-            case None => return false
-
-        case elem: Elem =>
-          ctx = ctx.copy(stack = elem :: ctx.stack)
-
-    ctx.stack match
-      case e :: _ => e.nonEmpty
-      case _ => false
-
+    Evaluator.run(cmds, z) map (_.nonEmpty) getOrElse false
 
 object Script:
 

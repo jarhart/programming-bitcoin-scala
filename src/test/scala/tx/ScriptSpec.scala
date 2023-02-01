@@ -2,6 +2,8 @@ package tx
 
 import org.scalatest.freespec.AnyFreeSpec
 
+import script._
+
 import java.util.HexFormat
 
 class ScriptSpec extends AnyFreeSpec:
