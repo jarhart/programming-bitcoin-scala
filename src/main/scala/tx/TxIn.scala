@@ -23,8 +23,11 @@ final case class TxIn(prevTx: Array[Byte], prevIndex: BigInt, scriptSig: Script,
   def value(testnet: Boolean = false): BigInt =
     fetchTx(testnet).outputs(prevIndex.toInt).amount
 
-  def script(testnet: Boolean = false): Script =
+  def scriptPubkey(testnet: Boolean = false): Script =
     fetchTx(testnet).outputs(prevIndex.toInt).script
+
+  def replaceScriptSigWithPubkey(testnet: Boolean = false): TxIn =
+    copy(scriptSig = scriptPubkey(testnet))
 
 object TxIn:
   val decode: Decoder[TxIn] = for {

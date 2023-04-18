@@ -10,6 +10,8 @@ final case class Tx(version: BigInt, inputs: Seq[TxIn], outputs: Seq[TxOut], loc
   private val hexFormat = HexFormat.of()
   import hexFormat.formatHex
 
+  val SIGHASH_ALL = BigInt(1)
+
   def id = formatHex(hash)
 
   def hash = hash256(serialize).reverse
@@ -25,8 +27,21 @@ final case class Tx(version: BigInt, inputs: Seq[TxIn], outputs: Seq[TxOut], loc
 
   def serialize = encode.written.toArray
 
-  def fee: BigInt =
-    inputs.map(_.value(testnet)).sum - outputs.map(_.amount).sum
+  def fee: BigInt = inputs.map(_.value(testnet)).sum - outputs.map(_.amount).sum
+
+  def verify: Boolean = (fee >= 0) && (inputs.indices forall verifyInput)
+
+  def sigHash(inputIndex: Int): BigInt =
+    LittleEndian.toInt(hash256(
+      replaceScriptSigWithPubkey(inputIndex).serialize
+        ++ toBytes(SIGHASH_ALL, 4)))
+
+  def verifyInput(inputIndex: Int): Boolean =
+    val input = inputs(inputIndex)
+    (input.scriptSig ++ input.scriptPubkey(testnet)).evaluate(sigHash(inputIndex))
+
+  def replaceScriptSigWithPubkey(inputIndex: Int): Tx =
+    copy(inputs = inputs.updated(inputIndex, inputs(inputIndex).replaceScriptSigWithPubkey(testnet)))
 
 object Tx:
   val decode: Decoder[Tx] = for {

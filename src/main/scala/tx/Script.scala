@@ -31,7 +31,7 @@ final case class Script(cmds: Seq[Cmd] = Seq()):
   def serialize = encode.written.toArray
 
   def evaluate(z: BigInt): Boolean =
-    Evaluator.run(cmds, z) map (_.nonEmpty) getOrElse false
+    Evaluator.run(cmds, z) exists (_ != BigInt(0))
 
 object Script:
 

@@ -28,6 +28,8 @@ object Op:
 
   val head: Op[Elem] = lift(stack => stack.headOption map ((stack.tail, _)))
 
+  val result: Op[BigInt] = head map Num.decode
+
   val next: Op[Option[Op[Unit]]] = liftC {
     case (stack, Seq(cmd, cmds*)) => (stack, cmds, Some(Op(cmd)))
     case (stack, cmds) => (stack, cmds, None)
