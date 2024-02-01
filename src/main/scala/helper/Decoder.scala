@@ -1,7 +1,7 @@
 package helper
 
 import cats.data.State
-import cats.syntax.traverse._
+import cats.syntax.traverse.*
 
 type Decoder[A] = State[LazyList[Byte], A]
 
@@ -19,5 +19,6 @@ object Decoder:
     LazyList.fill(n)(da).sequence
 
   def many[A](length: Int)(da: Decoder[A]): Decoder[LazyList[A]] =
-    take(length) map (LazyList.unfold(_)(bytes =>
-      Option.when(bytes.nonEmpty)(da.run(bytes).value.swap)))
+    take(length) map:
+      LazyList.unfold(_): bytes =>
+        Option.when(bytes.nonEmpty)(da.run(bytes).value.swap)

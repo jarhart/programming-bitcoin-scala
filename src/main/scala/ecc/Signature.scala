@@ -8,8 +8,8 @@ final case class Signature(r: BigInt, s: BigInt):
     val sBin = s.toByteArray
 
     val sig =
-      Array(valMarker, rBin.length.toByte) ++ rBin ++
-      Array(valMarker, sBin.length.toByte) ++ sBin
+      Array(valMarker, rBin.length.toByte) ++ rBin
+        ++ Array(valMarker, sBin.length.toByte) ++ sBin
 
     Array(sigMarker, sig.length.toByte) ++ sig
 

@@ -1,20 +1,18 @@
 package ecc
 
 import org.scalatest.freespec.AnyFreeSpec
-import java.util.HexFormat
+import helper.HexFormat
 
 class S256PointSpec extends AnyFreeSpec:
 
-  val hexFormat = HexFormat.of()
-  import hexFormat.parseHex
+  import HexFormat.parseHex
 
   "S256Point" - {
 
-    "order of g is n" in {
+    "order of g is n" in:
       assert(S256Point.n * S256Point.g == S256Point.atInfinity)
-    }
 
-    "multiplying by g produces correct public points" in {
+    "multiplying by g produces correct public points" in:
       val points = Seq(
         (BigInt(7), BigInt("5cbdf0646e5db4eaa398f365f2ea7a0e3d419b7e0330e39ce92bddedcac4f9bc", 16), BigInt("6aebca40ba255960a3178d6d861a54dba813d0b813fde7b5a5082628087264da", 16)),
         (BigInt(1485), BigInt("c982196a7466fbbbb0e27a940b6af926c1a74d5ad07128c82824a11b5398afda", 16), BigInt("7a91f9eae64438afb9ce6448a1c133db2d8fb9254e4546b6f001637d50901f55", 16)),
@@ -25,26 +23,23 @@ class S256PointSpec extends AnyFreeSpec:
       for ((secret, x, y) <- points)
         val point = S256Point(x, y)
         assert(secret * S256Point.g == point)
-    }
 
     "verify verifies signatures" - {
       val point = S256Point(
           BigInt("887387e452b8eacc4acfde10d9aaf7f6d9a0f975aabb10d006e4da568744d06c", 16),
           BigInt("61de6d95231cd89026e286df3b6ae4a894a3378e393e93a0f45b666329a0ae34", 16))
 
-      "case 1" in {
+      "case 1" in:
         val z = BigInt("ec208baa0fc1c19f708a9ca96fdeff3ac3f230bb4a7ba4aede4942ad003c0f60", 16)
         val r = BigInt("ac8d1c87e51d0d441be8b3dd5b05c8795b48875dffe00b7ffcfac23010d3a395", 16)
         val s = BigInt("68342ceff8935ededd102dd876ffd6ba72d6a427a3edb13d26eb0781cb423c4", 16)
         assert(point.verify(z, Signature(r, s)))
-      }
 
-      "case 2" in {
+      "case 2" in:
         val z = BigInt("7c076ff316692a3d7eb3c3bb0f8b1488cf72e1afcd929e29307032997a838a3d", 16)
         val r = BigInt("eff69ef2b1bd93a66ed5219add4fb51e11a840f404876325a1e8ffe0529a2c", 16)
         val s = BigInt("c7207fee197d27c618aea621406f6bf5ef6fca38681d82b2f06fddbdce6feab6", 16)
         assert(point.verify(z, Signature(r, s)))
-      }
     }
 
     val uncompressed = Seq(
@@ -61,35 +56,31 @@ class S256PointSpec extends AnyFreeSpec:
 
     "sec" - {
 
-      "encodes in the uncompressed SEC format" in {
+      "encodes in the uncompressed SEC format" in:
         for ((secret, s) <- uncompressed)
           val point = secret * S256Point.g
           assert(point.sec(compressed = false).toSeq == parseHex(s).toSeq)
-      }
 
-      "encodes in the compressed SEC format" in {
+      "encodes in the compressed SEC format" in:
         for ((secret, s) <- compressed)
           val point = secret * S256Point.g
           assert(point.sec(compressed = true).toSeq == parseHex(s).toSeq)
-      }
     }
 
     "parse" - {
 
-      "parses uncompressed SEC format" in {
+      "parses uncompressed SEC format" in:
         for ((secret, s) <- uncompressed)
           val point = secret * S256Point.g
           assert(S256Point.parse(parseHex(s)) == Some(point))
-      }
 
-      "parses compressed SEC format" in {
+      "parses compressed SEC format" in:
         for ((secret, s) <- compressed)
           val point = secret * S256Point.g
           assert(S256Point.parse(parseHex(s)) == Some(point))
-      }
     }
 
-    "address encodes addresses" in {
+    "address encodes addresses" in:
       val addresses = Seq(
         (BigInt(888).pow(3), true, "148dY81A9BmdpMhvYEVznrM45kWN32vSCN", "mieaqB68xDCtbUBYFoUNcmZNwk74xcBfTP"),
         (BigInt(321), false, "1S6g2xBJSED7Qr9CYZib5f4PYVhHZiVfj", "mfx3y63A7TfTtXKkv7Y6QzsPFY6QCBCXiP"),
@@ -100,5 +91,4 @@ class S256PointSpec extends AnyFreeSpec:
         val point = secret * S256Point.g
         assert(point.address(compressed=compressed, testnet=false) == mainnetAddress)
         assert(point.address(compressed=compressed, testnet=true) == testnetAddress)
-    }
   }

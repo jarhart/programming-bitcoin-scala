@@ -4,16 +4,16 @@ import org.scalacheck.Gen
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-import java.util.HexFormat
+import helper.HexFormat
 
 import helper.toBytes
 class Base58CheckSpec extends AnyFreeSpec with ScalaCheckPropertyChecks:
 
-  val hexFormat = HexFormat.of()
-  import hexFormat.{formatHex, parseHex}
+  import HexFormat.*
 
   "Base58check" - {
-    "encode encodes in base58check format" in {
+
+    "encode encodes in base58check format" in:
       val examples = Seq(
         "008abeb2568398324ca2b898bdf8ea5f0a5a7a78a1" -> "1DechJoU257M5xB5wBVHRLQsZTjmYn1s9D",
         "00aaef4ba40dc7064361e977e4e1b3462b2da74c36" -> "1GapY9pVhsE5mfdAk7agW9KD7ReD63RN9A",
@@ -24,9 +24,8 @@ class Base58CheckSpec extends AnyFreeSpec with ScalaCheckPropertyChecks:
 
       for ((hex, base58check) <- examples)
         assert(Base58check.encode(parseHex(hex)) == base58check)
-    }
 
-    "decode decodes base58 format" in {
+    "decode decodes base58 format" in:
       val examples = Seq(
         "13WbsoHJNftbfcqrt5crnAYEJvHyQ5vZHP" -> "001b896d65b9c7ed4365c4f5ba2392c4a62c04a7ab",
         "16M3X4uLXvFf3zFXzKoZRfWmPY8TEfLJXP" -> "003aa30ce7b095251f377e73e1dff993bd85e545a2",
@@ -37,12 +36,9 @@ class Base58CheckSpec extends AnyFreeSpec with ScalaCheckPropertyChecks:
 
       for ((base58check, hex) <- examples)
         assert(formatHex(Base58check.decode(base58check)) == hex)
-    }
 
-    "decode is the inverse of encode" in {
-      forAll(Gen.posNum[Long]) { n =>
+    "decode is the inverse of encode" in:
+      forAll(Gen.posNum[Long]): n =>
         val i = BigInt(n)
         assert(BigInt(Base58check.decode(Base58check.encode(toBytes(i, 21)))) == i)
-      }
-    }
   }

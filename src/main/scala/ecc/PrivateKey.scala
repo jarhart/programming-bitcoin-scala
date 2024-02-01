@@ -1,13 +1,13 @@
 package ecc
 
-import helper._
+import helper.*
 import scala.util.Random
 
 final case class PrivateKey(secret: BigInt):
   import S256Point.{g, n}
 
   require(secret > 1 && secret < n)
-  
+
   import PrivateKey.randomK
 
   val point = secret * g
@@ -32,7 +32,7 @@ final case class PrivateKey(secret: BigInt):
     val k = deterministicK(z)
     k * g match
       case NonZeroPoint(FieldElement(r), _) => k -> r
-      case _ => ???
+      case _                                => ???
 
   private def deterministicK(z: BigInt): BigInt =
     if z > n then deterministicK(z - n)
@@ -61,7 +61,7 @@ final case class PrivateKey(secret: BigInt):
     val k = randomK(rnd)
     k * g match
       case NonZeroPoint(FieldElement(r), _) => k -> r
-      case _ => randomKeyPair(rnd)
+      case _                                => randomKeyPair(rnd)
 
 object PrivateKey:
   import S256Point.n
@@ -71,4 +71,4 @@ object PrivateKey:
   private[PrivateKey] def randomK(rnd: Random): BigInt =
     BigInt(256, rnd) match
       case i if i < n => i
-      case _ => randomK(rnd)
+      case _          => randomK(rnd)

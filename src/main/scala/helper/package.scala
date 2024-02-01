@@ -42,11 +42,11 @@ def ripemd160(message: Array[Byte]): Array[Byte] =
   MessageDigest.getInstance("RIPEMD160").digest(message)
 
 def toBytes(x: BigInt, length: Int = 32): Array[Byte] =
-  val unpadded = x.toByteArray match
+  val unPadded = x.toByteArray match
     case Array(0, rest*) => rest.toArray
-    case other => other
-  require(unpadded.length <= length, s"${x} is too big for ${length} bytes")
-  padLeft(length)(unpadded)
+    case other           => other
+  require(unPadded.length <= length, s"${x} is too big for ${length} bytes")
+  padLeft(length)(unPadded)
 
 def unsignedFromBytes(bytes: Array[Byte]) = BigInt((0: Byte) +: bytes)
 

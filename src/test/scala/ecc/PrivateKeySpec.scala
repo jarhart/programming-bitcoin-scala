@@ -7,14 +7,13 @@ class PrivateKeySpec extends AnyFreeSpec:
   
   "PrivateKey" - {
 
-    "sign creates valid signatures" in {
+    "sign creates valid signatures" in:
       val pk = PrivateKey.random()
       val z = BigInt(256, Random)
       val sig = pk.sign(z)
       assert(pk.point.verify(z, sig))
-    }
 
-    "wif returns the WIF format" in {
+    "wif returns the WIF format" in:
       val keys = Seq(
         (PrivateKey(BigInt(2).pow(256) - BigInt(2).pow(199)), true, false, "L5oLkpV3aqBJ4BgssVAsax1iRa77G5CVYnv9adQ6Z87te7TyUdSC"),
         (PrivateKey(BigInt(2).pow(256) - BigInt(2).pow(201)), false, true, "93XfLeifX7Jx7n7ELGMAf1SUR6f9kgQs8Xke8WStMwUtrDucMzn"),
@@ -24,5 +23,4 @@ class PrivateKeySpec extends AnyFreeSpec:
 
       for ((pk, compressed, testnet, expected) <- keys)
         assert(pk.wif(compressed=compressed, testnet=testnet) == expected)
-    }
   }

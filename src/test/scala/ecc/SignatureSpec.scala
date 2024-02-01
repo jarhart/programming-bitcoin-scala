@@ -5,7 +5,7 @@ import scala.util.Random
 
 class SignatureSpec extends AnyFreeSpec:
 
-  "der encodes in the DER format" in {
+  "der encodes in the DER format" in:
 
     val signatures = Seq(
       Signature(1, 2),
@@ -15,4 +15,3 @@ class SignatureSpec extends AnyFreeSpec:
 
     for (sig <- signatures)
       assert(sig == Signature.parse(sig.der))
-  }

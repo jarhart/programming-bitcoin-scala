@@ -1,14 +1,14 @@
 package tx.script
 
-import ecc._
-import helper._
+import ecc.*
+import helper.*
 import collection.mutable
-import math._
+import math.*
 
-import cats.syntax.flatMap._
+import cats.syntax.flatMap.*
 
 object Ops:
-  import Op._
+  import Op.*
 
   val op0 = push(0)
   val op1negate = push(-1)
@@ -31,7 +31,7 @@ object Ops:
 
   val opNop = liftU(Some(_))
 
-  val opIf = liftCU { (stack, cmds) =>
+  val opIf = liftCU: (stack, cmds) =>
     val items = mutable.Buffer[Cmd](cmds*)
     val trueItems = mutable.Buffer[Cmd]()
     val falseItems = mutable.Buffer[Cmd]()
@@ -47,21 +47,17 @@ object Ops:
       else if numEndifsNeeded == 1 && item == OP_ELSE then
         currentItems = falseItems
       else if item == OP_ENDIF then
-        if numEndifsNeeded == 1 then
-          found = true
+        if numEndifsNeeded == 1 then found = true
         else
           numEndifsNeeded -= 1
           currentItems += item
-      else
-        currentItems += item
-    
-    Option.when(found)(stack) collect {
+      else currentItems += item
+
+    Option.when(found)(stack) collect:
       case e :: stack =>
         (stack, (if (Num.decode(e) == 0) then falseItems else trueItems).toSeq)
-    }
-  }
 
-  val opNotIf = liftCU { (stack, cmds) =>
+  val opNotIf = liftCU: (stack, cmds) =>
     val items = mutable.Buffer[Cmd](cmds*)
     val trueItems = mutable.Buffer[Cmd]()
     val falseItems = mutable.Buffer[Cmd]()
@@ -77,72 +73,91 @@ object Ops:
       else if numEndifsNeeded == 1 && item == OP_ELSE then
         currentItems = falseItems
       else if item == OP_ENDIF then
-        if numEndifsNeeded == 1 then
-          found = true
+        if numEndifsNeeded == 1 then found = true
         else
           numEndifsNeeded -= 1
           currentItems += item
-      else
-        currentItems += item
-    
-    Option.when(found)(stack) collect {
+      else currentItems += item
+
+    Option.when(found)(stack) collect:
       case e :: stack =>
         (stack, (if (Num.decode(e) == 0) then trueItems else falseItems).toSeq)
-    }
-  }
 
-  val opVerify = liftU { case element :: stack if Num.decode(element) != 0 => stack }
+  val opVerify = liftU:
+    case element :: stack if Num.decode(element) != 0 => stack
 
   val opReturn = liftU(_ => None)
 
-  val opToAltStack = liftSU { case (x :: stack, altStack) => (stack, x :: altStack) }
+  val opToAltStack = liftSU:
+    case (x :: stack, altStack) => (stack, x :: altStack)
 
-  val opFromAltStack = liftSU { case (stack, x :: altStack) => (x :: stack, altStack) }
+  val opFromAltStack = liftSU:
+    case (stack, x :: altStack) => (x :: stack, altStack)
 
-  val op2drop = liftU { case _ :: _ :: stack => stack }
+  val op2drop = liftU:
+    case _ :: _ :: stack => stack
 
-  val op2dup = liftU { case stack @ (a :: b :: _) => (a :: b :: stack) }
+  val op2dup = liftU:
+    case stack @ (a :: b :: _) => (a :: b :: stack)
 
-  val op3dup = liftU { case stack @ (a :: b :: c :: _) => (a :: b :: c :: stack) }
+  val op3dup = liftU:
+    case stack @ (a :: b :: c :: _) => (a :: b :: c :: stack)
 
-  val op2over = liftU { case stack @ (_ :: _ :: a :: b :: _) => (a :: b :: stack) }
+  val op2over = liftU:
+    case stack @ (_ :: _ :: a :: b :: _) => (a :: b :: stack)
 
-  val op2rot = liftU { case a :: b :: c :: d :: e :: f :: stack => (e :: f :: a :: b :: c :: d :: stack) }
+  val op2rot = liftU:
+    case a :: b :: c :: d :: e :: f :: stack =>
+      e :: f :: a :: b :: c :: d :: stack
 
-  val op2swap = liftU { case a :: b :: c :: d :: stack => (c :: d :: a :: b :: stack) }
+  val op2swap = liftU:
+    case a :: b :: c :: d :: stack => (c :: d :: a :: b :: stack)
 
-  val opIfDup = liftU { case e :: stack => (if Num.decode(e) == 0 then stack else e :: stack) }
+  val opIfDup = liftU:
+    case e :: stack => (if Num.decode(e) == 0 then stack else e :: stack)
 
-  val opDepth = liftU { case stack => (Num.encode(stack.length) :: stack) }
+  val opDepth = liftU:
+    case stack => (Num.encode(stack.length) :: stack)
 
-  val opDrop = liftU { case _ :: stack => stack }
+  val opDrop = liftU:
+    case _ :: stack => stack
 
-  val opDup = liftU { case stack @ (e :: _) => (e :: stack) }
+  val opDup = liftU:
+    case stack @ (e :: _) => (e :: stack)
 
-  val opNip = liftU { case a :: _ :: stack => (a :: stack) }
+  val opNip = liftU:
+    case a :: _ :: stack => (a :: stack)
 
-  val opOver = liftU { case stack @ (_ :: a :: _) => (a :: stack) }
+  val opOver = liftU:
+    case stack @ (_ :: a :: _) => (a :: stack)
 
-  val opPick = liftU { stack =>
-    for (e <- stack.headOption; n = Num.decode(e).toInt if stack.tail.isDefinedAt(n))
-      yield (stack.tail(n) :: stack.tail)
-  }
+  val opPick = liftU: stack =>
+    for
+      e <- stack.headOption; n = Num.decode(e).toInt
+      if stack.tail.isDefinedAt(n)
+    yield (stack.tail(n) :: stack.tail)
 
-  val opRoll = liftU { stack =>
-    for (e <- stack.headOption; n = Num.decode(e).toInt if stack.tail.isDefinedAt(n))
-      yield stack.tail.splitAt(n) match
-        case (s1, s2) => (s2.head :: s1 ++ s2.tail)
-  }
+  val opRoll = liftU: stack =>
+    for
+      e <- stack.headOption; n = Num.decode(e).toInt
+      if stack.tail.isDefinedAt(n)
+    yield stack.tail.splitAt(n) match
+      case (s1, s2) => (s2.head :: s1 ++ s2.tail)
 
-  val opRot = liftU { case a :: b :: c :: stack => (c :: a :: b :: stack) }
+  val opRot = liftU:
+    case a :: b :: c :: stack => (c :: a :: b :: stack)
 
-  val opSwap = liftU { case a :: b :: stack => (b :: a :: stack) }
+  val opSwap = liftU:
+    case a :: b :: stack => (b :: a :: stack)
 
-  val opTuck = liftU { case a :: b :: stack => (a :: b :: b :: stack) }
+  val opTuck = liftU:
+    case a :: b :: stack => (a :: b :: b :: stack)
 
-  val opSize = liftU { case stack @ (e :: _) => (Num.encode(e.length) :: stack) }
+  val opSize = liftU:
+    case stack @ (e :: _) => (Num.encode(e.length) :: stack)
 
-  val opEqual = binary((element1, element2) => Num.encode(if element1 == element2 then 1 else 0))
+  val opEqual = binary: (element1, element2) =>
+    Num.encode(if element1 == element2 then 1 else 0)
 
   val opEqualVerify = opEqual >> opVerify
 
@@ -150,7 +165,7 @@ object Ops:
 
   val op1sub = intUnary(_ - 1)
 
-  val opNegate = intUnary(- _)
+  val opNegate = intUnary(-_)
 
   val opAbs = intUnary(_.abs)
 
@@ -164,9 +179,9 @@ object Ops:
 
   val opMul = intBinary(_ * _)
 
-  val opBoolAnd = intBinary ((i, j) => if i != 0 && j != 0 then 1 else 0)
-  
-  val opBoolOr = intBinary ((i, j) => if i != 0 || j != 0 then 1 else 0)
+  val opBoolAnd = intBinary((i, j) => if i != 0 && j != 0 then 1 else 0)
+
+  val opBoolOr = intBinary((i, j) => if i != 0 || j != 0 then 1 else 0)
 
   val opNumEqual = intBinary((i, j) => if i == j then 1 else 0)
 
@@ -186,9 +201,8 @@ object Ops:
 
   val opMax = intBinary(_ max _)
 
-  val opWithin = intTrinary { (maximum, minimum, element) =>
+  val opWithin = intTrinary: (maximum, minimum, element) =>
     if minimum to maximum contains element then 1 else 0
-  }
 
   val opRipeMD160 = unary(ripemd160)
 
@@ -197,17 +211,16 @@ object Ops:
   val opSha256 = unary(sha256)
 
   val opHash160 = unary(hash160)
-  
+
   val opHash256 = unary(hash256)
 
-  val opCheckSig = liftZU { (stack, z) =>
-    for {
+  val opCheckSig = liftZU: (stack, z) =>
+    for
       pk <- stack.headOption flatMap S256Point.parse
       sig <- stack.tail.headOption map Signature.parse
       verified = S256Point.verify(pk, z, sig)
       result = Num.encode(if verified then 1 else 0)
-    } yield result :: stack.drop(2)
-  }
+    yield result :: stack.drop(2)
 
   val opCheckSigVerify = opCheckSig >> opVerify
 
@@ -240,7 +253,7 @@ object Ops:
     OP_16 -> op16,
     OP_NOP -> opNop,
     OP_IF -> opIf,
-    OP_NOTIF-> opNotIf,
+    OP_NOTIF -> opNotIf,
     OP_VERIFY -> opVerify,
     OP_RETURN -> opReturn,
     OP_TOALTSTACK -> opToAltStack,
@@ -304,5 +317,5 @@ object Ops:
     OP_NOP7 -> opNop,
     OP_NOP8 -> opNop,
     OP_NOP9 -> opNop,
-    OP_NOP10 -> opNop,
+    OP_NOP10 -> opNop
   )

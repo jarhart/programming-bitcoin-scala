@@ -1,6 +1,6 @@
 package tx.script
 
-import cats.syntax.flatMap._
+import cats.syntax.flatMap.*
 
 type Stack = List[Elem]
 

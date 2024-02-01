@@ -1,7 +1,10 @@
 package ecc
 
-final case class FieldElement[P <: BigInt : ValueOf](val num: BigInt):
-  require(num >= 0 && num < prime, s"Num ${num} not in field range 0 to ${prime - 1}")
+final case class FieldElement[P <: BigInt: ValueOf](val num: BigInt):
+  require(
+    num >= 0 && num < prime,
+    s"Num ${num} not in field range 0 to ${prime - 1}"
+  )
 
   def prime: BigInt = valueOf[P]
 
@@ -21,12 +24,10 @@ final case class FieldElement[P <: BigInt : ValueOf](val num: BigInt):
 
   private def mod_p(i: BigInt) = FieldElement[P](i mod prime)
 
-object FieldElement:
-
-  given fieldElementCoordinate[P <: BigInt : ValueOf]: Coordinate[FieldElement[P]] with
-    def add(a: FieldElement[P], b: FieldElement[P]) = a + b
-    def sub(a: FieldElement[P], b: FieldElement[P]) = a - b
-    def mul(a: FieldElement[P], b: FieldElement[P]) = a * b
-    def div(a: FieldElement[P], b: FieldElement[P]) = a / b
-    def ipow(a: FieldElement[P], b: Int) = a pow b
-    def rmul(coeff: BigInt, e: FieldElement[P]) = e rmul coeff
+given [P <: BigInt: ValueOf]: Coordinate[FieldElement[P]] with
+  def add(a: FieldElement[P], b: FieldElement[P]) = a + b
+  def sub(a: FieldElement[P], b: FieldElement[P]) = a - b
+  def mul(a: FieldElement[P], b: FieldElement[P]) = a * b
+  def div(a: FieldElement[P], b: FieldElement[P]) = a / b
+  def ipow(a: FieldElement[P], e: Int) = a pow e
+  def rmul(coeff: BigInt, e: FieldElement[P]) = e rmul coeff

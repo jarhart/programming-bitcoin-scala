@@ -2,12 +2,12 @@ package tx.script
 
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
-import java.util.HexFormat
+
+import helper.HexFormat
 
 class NumSpec extends AnyFreeSpec with ScalaCheckPropertyChecks:
 
-  val hexFormat = HexFormat.of()
-  import hexFormat.formatHex
+  import HexFormat.formatHex
 
   "Num.encode" - {
     "encodes 0 as no bytes" in {
