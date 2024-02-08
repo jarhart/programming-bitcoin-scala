@@ -8,8 +8,6 @@ final case class TxIn(
     scriptSig: Script,
     sequence: BigInt = BigInt("ffffffff", 16)
 ):
-  import HexFormat.formatHex
-
   val encode =
     for
       _ <- Bytes.tellReverse(prevTx)

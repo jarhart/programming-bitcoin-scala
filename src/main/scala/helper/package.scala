@@ -8,6 +8,12 @@ import scala.util.Random
 import java.security.Security
 import org.bouncycastle.jce.provider.BouncyCastleProvider
 
+def parseHex(s: String): Array[Byte] =
+  s.grouped(2).map(Integer.parseInt(_, 16).toByte).toArray
+
+def formatHex(bytes: Array[Byte]): String =
+  bytes.map("%02x".format(_)).mkString
+
 def hash160(message: String): String = String(hash160(message.getBytes()))
 
 def hash160(message: Array[Byte]): Array[Byte] = ripemd160(sha256(message))

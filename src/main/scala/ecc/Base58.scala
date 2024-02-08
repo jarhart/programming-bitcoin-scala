@@ -22,8 +22,6 @@ object Base58:
 
 object Base58check:
 
-  import HexFormat.formatHex
-
   def encode(bytes: Array[Byte]): String =
     Base58.encode(bytes ++ hash256(bytes).take(4))
 

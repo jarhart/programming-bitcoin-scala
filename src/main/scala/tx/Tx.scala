@@ -11,8 +11,6 @@ final case class Tx(
     locktime: BigInt,
     testnet: Boolean = false
 ):
-  import HexFormat.formatHex
-
   val SIGHASH_ALL = BigInt(1)
 
   def id = formatHex(hash)

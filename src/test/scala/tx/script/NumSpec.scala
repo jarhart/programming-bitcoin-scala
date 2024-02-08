@@ -1,33 +1,26 @@
 package tx.script
 
-import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.funspec.AnyFunSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-import helper.HexFormat
+import helper.*
 
-class NumSpec extends AnyFreeSpec with ScalaCheckPropertyChecks:
+class NumSpec extends AnyFunSpec with ScalaCheckPropertyChecks:
 
-  import HexFormat.formatHex
-
-  "Num.encode" - {
-    "encodes 0 as no bytes" in {
+  describe("Num.encode"):
+    it("encodes 0 as no bytes"):
       assert(Num.encode(0).isEmpty)
-    }
 
-    "encodes positive numbers" in {
+    it("encodes positive numbers"):
       assert(formatHex(Num.encode(234)) == "ea00")
       assert(formatHex(Num.encode(34567)) == "078700")
-    }
 
-    "encodes negative numbers" in {
+    it("encodes negative numbers"):
       assert(formatHex(Num.encode(-234)) == "ea80")
       assert(formatHex(Num.encode(-34567)) == "078780")
-    }
-  }
 
-  "Num.decode is the inverse of Num.encode" in {
-    forAll { (i: Int) =>
-      val num = BigInt(i)
-      assert(Num.decode(Num.encode(num)) == num)
-    }
-  }
+  describe("Num.decode"):
+    it("Num.decode is the inverse of Num.encode"):
+      forAll: (i: Int) =>
+        val num = BigInt(i)
+        assert(Num.decode(Num.encode(num)) == num)

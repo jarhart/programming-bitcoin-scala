@@ -1,22 +1,24 @@
 package ecc
 
 import org.scalacheck.Gen
-import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.funspec.AnyFunSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class Base58Spec extends AnyFreeSpec with ScalaCheckPropertyChecks:
+class Base58Spec extends AnyFunSpec with ScalaCheckPropertyChecks:
 
-  "Base58" - {
-    "encode encodes in base58 format" in:
-      val bytes = BigInt("987654321987654321").toByteArray
-      assert(Base58.encode(bytes) == "3HyFRGmiNAk")
+  describe("Base58"):
 
-    "decode decodes base58 format" in:
-      val i = BigInt("987654321987654321")
-      assert(BigInt(Base58.decode("3HyFRGmiNAk")) == i)
+    describe("encode"):
+      it("encodes in base58 format"):
+        val bytes = BigInt("987654321987654321").toByteArray
+        assert(Base58.encode(bytes) == "3HyFRGmiNAk")
 
-    "decode is the inverse of encode" in:
-      forAll(Gen.posNum[Long]): n =>
-        val i = BigInt(n)
-        assert(BigInt(Base58.decode(Base58.encode(i.toByteArray))) == i)
-  }
+    describe("decode"):
+      it("decodes base58 format"):
+        val i = BigInt("987654321987654321")
+        assert(BigInt(Base58.decode("3HyFRGmiNAk")) == i)
+
+      it("is the inverse of encode"):
+        forAll(Gen.posNum[Long]): n =>
+          val i = BigInt(n)
+          assert(BigInt(Base58.decode(Base58.encode(i.toByteArray))) == i)

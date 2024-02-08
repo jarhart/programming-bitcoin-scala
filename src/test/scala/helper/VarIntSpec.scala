@@ -1,57 +1,53 @@
 package helper
 
-import org.scalatest.freespec.AnyFreeSpec
+import org.scalatest.funspec.AnyFunSpec
 import scala.util.Random
 
-import helper.HexFormat
+import helper.*
 
-class VarIntSpec extends AnyFreeSpec:
+class VarIntSpec extends AnyFunSpec:
 
-  import HexFormat.*
+  describe("parse"):
 
-  "parse" - {
-
-    "parses a single-byte VarInt from Bytes" in:
+    it("parses a single-byte VarInt from Bytes"):
       val i = BigInt(234)
       val extra = Random.nextBytes(9)
       val bytes = LittleEndian.fromInt(i, 1) ++ extra
       assert(VarInt.parse(bytes) == i)
 
-    "parses 253 encoded as a VarInt" in:
+    it("parses 253 encoded as a VarInt"):
       val extra = Random.nextBytes(9)
       val bytes = parseHex("fdfd00") ++ extra
       assert(VarInt.parse(bytes) == BigInt(253))
 
-    "parses 254 encoded as a VarInt" in:
+    it("parses 254 encoded as a VarInt"):
       val extra = Random.nextBytes(9)
       val bytes = parseHex("fdfe00") ++ extra
       assert(VarInt.parse(bytes) == BigInt(254))
 
-    "parses 255 encoded as a VarInt" in:
+    it("parses 255 encoded as a VarInt"):
       val extra = Random.nextBytes(9)
       val bytes = parseHex("fdff00") ++ extra
       assert(VarInt.parse(bytes) == BigInt(255))
 
-    "parses a larger VarInt from Bytes" in:
+    it("parses a larger VarInt from Bytes"):
       val extra = Random.nextBytes(9)
       val bytes = parseHex("fe40e20100") ++ extra
       assert(VarInt.parse(bytes) == BigInt(123456))
-  }
 
-  "serialize" - {
+  describe("serialize"):
 
-    "serializes a single-byte VarInt" in:
+    it("serializes a single-byte VarInt"):
       assert(formatHex(VarInt.serialize(234)) == "ea")
 
-    "serializes 253 as a VarInt" in:
+    it("serializes 253 as a VarInt"):
       assert(formatHex(VarInt.serialize(253)) == "fdfd00")
 
-    "serializes 254 as a VarInt" in:
+    it("serializes 254 as a VarInt"):
       assert(formatHex(VarInt.serialize(254)) == "fdfe00")
 
-    "serializes 255 as a VarInt" in:
+    it("serializes 255 as a VarInt"):
       assert(formatHex(VarInt.serialize(255)) == "fdff00")
 
-    "serializes a larger VarInt" in:
+    it("serializes a larger VarInt"):
       assert(formatHex(VarInt.serialize(123456)) == "fe40e20100")
-  }

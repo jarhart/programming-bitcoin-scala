@@ -13,8 +13,6 @@ object TxFetcher:
 
   private val cache = mutable.Map[String, Tx]()
 
-  import HexFormat.*
-
   val mainnetUrl = "https://blockstream.info/api"
   val testnetUrl = "https://blockstream.info/testnet/api"
 
