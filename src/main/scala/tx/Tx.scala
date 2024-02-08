@@ -1,5 +1,6 @@
 package tx
 
+import ecc.*
 import helper.*
 
 import cats.syntax.traverse.*
@@ -32,6 +33,14 @@ final case class Tx(
   def fee: BigInt = inputs.map(_.value(testnet)).sum - outputs.map(_.amount).sum
 
   def verify: Boolean = (fee >= 0) && (inputs.indices forall verifyInput)
+
+  def signInput(inputIndex: Int, privateKey: PrivateKey): Tx =
+    val z = sigHash(inputIndex)
+    val der = privateKey.sign(z).der
+    val sig = der ++ SIGHASH_ALL.toByteArray
+    val sec = privateKey.point.sec()
+    val updatedTxIn = inputs(inputIndex).copy(scriptSig = Script(sig, sec))
+    copy(inputs = inputs.updated(inputIndex, updatedTxIn))
 
   def sigHash(inputIndex: Int): BigInt =
     LittleEndian.toInt:

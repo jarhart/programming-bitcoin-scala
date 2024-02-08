@@ -2,7 +2,7 @@ package tx
 
 import helper.*
 
-final case class TxIn(
+case class TxIn(
     prevTx: Array[Byte],
     prevIndex: BigInt,
     scriptSig: Script,

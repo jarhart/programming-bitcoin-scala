@@ -26,7 +26,7 @@ final case class PrivateKey(secret: BigInt):
     val secretBytes = toBytes(secret)
     val prefix = if testnet then 0xef.toByte else 0x80.toByte
     val suffix: Array[Byte] = if compressed then Array(1) else Array()
-    Base58check.encode(prefix +: (secretBytes ++ suffix))
+    helper.Base58check.encode(prefix +: (secretBytes ++ suffix))
 
   private def deterministicKeyPair(z: BigInt): (BigInt, BigInt) =
     val k = deterministicK(z)

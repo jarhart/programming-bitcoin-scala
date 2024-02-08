@@ -59,7 +59,7 @@ object S256Point:
       testnet: Boolean = false
   ) =
     val prefix: Byte = if testnet then 0x6f else 0
-    Base58check.encode(prefix +: S256Point.hash160(self, compressed))
+    helper.Base58check.encode(prefix +: S256Point.hash160(self, compressed))
 
   def parse(sec: Array[Byte]): Option[S256Point] = sec match
 

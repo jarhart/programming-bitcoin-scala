@@ -4,8 +4,9 @@ import cats.syntax.flatMap.*
 import cats.syntax.traverse.*
 import helper.*
 import script.*
+import scala.annotation.targetName
 
-final case class Script(cmds: Seq[Cmd] = Seq()):
+case class Script(cmds: Cmd*):
 
   def ++(that: Script) = Script(this.cmds ++ that.cmds)
 
@@ -31,6 +32,13 @@ final case class Script(cmds: Seq[Cmd] = Seq()):
     Evaluator.run(cmds, z) exists (_ != BigInt(0))
 
 object Script:
+  import OpCode.*
+
+  @targetName("wrap")
+  def apply(cmds: Seq[Cmd]): Script = Script(cmds: _*)
+
+  def p2pkh(h160: Array[Byte]) =
+    Script(OP_DUP, OP_HASH160, h160, OP_EQUALVERIFY, OP_CHECKSIG)
 
   def decodePushData(n: Int): Decoder[Cmd] =
     for
