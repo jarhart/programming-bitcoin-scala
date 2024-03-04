@@ -1,9 +1,9 @@
 package helper
 
-import org.scalatest.funspec.AnyFunSpec
-import scala.util.Random
-
 import helper.*
+import org.scalatest.funspec.AnyFunSpec
+
+import scala.util.Random
 
 class VarIntSpec extends AnyFunSpec:
 

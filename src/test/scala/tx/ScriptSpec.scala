@@ -1,9 +1,9 @@
 package tx
 
+import helper.*
 import org.scalatest.funspec.AnyFunSpec
 
 import script.*
-import helper.*
 
 class ScriptSpec extends AnyFunSpec:
 

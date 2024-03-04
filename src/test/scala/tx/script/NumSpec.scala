@@ -1,9 +1,8 @@
 package tx.script
 
+import helper.*
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
-
-import helper.*
 
 class NumSpec extends AnyFunSpec with ScalaCheckPropertyChecks:
 
@@ -21,6 +20,5 @@ class NumSpec extends AnyFunSpec with ScalaCheckPropertyChecks:
 
   describe("Num.decode"):
     it("Num.decode is the inverse of Num.encode"):
-      forAll: (i: Int) =>
-        val num = BigInt(i)
+      forAll: (num: BigInt) =>
         assert(Num.decode(Num.encode(num)) == num)

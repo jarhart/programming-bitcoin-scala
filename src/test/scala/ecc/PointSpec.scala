@@ -1,16 +1,17 @@
 package ecc
 
 import org.scalatest.funspec.AnyFunSpec
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
 
-class PointSpec extends AnyFunSpec:
+class PointSpec extends AnyFunSpec with ScalaCheckPropertyChecks:
 
   describe("Point"):
-  
+
     val a = BigInt(5)
     val b = BigInt(7)
     type A = a.type
     type B = b.type
-  
+
     it("refuses to construct points not on the curve"):
       assertThrows[IllegalArgumentException]:
         Point[BigInt, A, B](-2, 4)
@@ -47,48 +48,50 @@ class PointSpec extends AnyFunSpec:
       type A = a.type
       type B = b.type
       type C = FieldElement[P]
-    
+
       it("constructs valid points"):
         for ((x_raw, y_raw) <- Seq((192, 105), (17, 56), (1, 193)))
           val x = FieldElement[P](x_raw)
           val y = FieldElement[P](y_raw)
           Point[C, A, B](x, y)
-  
+
       it("refuses to construct invalid points"):
         for ((x_raw, y_raw) <- Seq((200, 119), (42, 99)))
           val x = FieldElement[P](x_raw)
           val y = FieldElement[P](y_raw)
           assertThrows[IllegalArgumentException] { Point[C, A, B](x, y) }
 
-      it("operator + add points"):
-        val additions = Seq(
-          (192, 105, 17, 56, 170, 142),
-          (47, 71, 117, 141, 60, 139),
-          (143, 98, 76, 66, 47, 71),
-        )
+      describe("operator +"):
+        it("add points"):
+          val additions = Table(
+            ("x1", "y1", "x2", "y2", "x3", "y3"),
+            (192, 105, 17, 56, 170, 142),
+            (47, 71, 117, 141, 60, 139),
+            (143, 98, 76, 66, 47, 71)
+          )
 
-        for ((x1_raw, y1_raw, x2_raw, y2_raw, x3_raw, y3_raw) <- additions)
-          val a = Point[C, A, B](FieldElement(x1_raw), FieldElement(y1_raw))
-          val b = Point[C, A, B](FieldElement(x2_raw), FieldElement(y2_raw))
-          val c = Point[C, A, B](FieldElement(x3_raw), FieldElement(y3_raw))
-          assert(a + b == c)
+          forAll(additions): (x1, y1, x2, y2, x3, y3) =>
+            val a = Point[C, A, B](FieldElement(x1), FieldElement(y1))
+            val b = Point[C, A, B](FieldElement(x2), FieldElement(y2))
+            val c = Point[C, A, B](FieldElement(x3), FieldElement(y3))
+            assert(a + b == c)
 
-      it("rmul does scalar multiplication"):
-        val multiplications = Seq(
-          (2, 192, 105, 49, 71),
-          (2, 143, 98, 64, 168),
-          (2, 47, 71, 36, 111),
-          (4, 47, 71, 194, 51),
-          (8, 47, 71, 116, 55),
-          (21, 47, 71, -1, -1),
-        )
-        
-        for ((s, x1_raw, y1_raw, x2_raw, y2_raw) <- multiplications)
-          val p1 = Point[C, A, B](FieldElement(x1_raw), FieldElement(y1_raw))
-          val p2 =
-            if x2_raw < 0 then
-              Point.atInfinity[C, A, B]
-            else
-              Point[C, A, B](FieldElement(x2_raw), FieldElement(y2_raw))
+      describe("rmul"):
+        it("does scalar multiplication"):
+          val multiplications = Table(
+            ("s", "x1", "y1", "x2", "y2"),
+            (2, 192, 105, 49, 71),
+            (2, 143, 98, 64, 168),
+            (2, 47, 71, 36, 111),
+            (4, 47, 71, 194, 51),
+            (8, 47, 71, 116, 55),
+            (21, 47, 71, -1, -1)
+          )
 
-          assert(s * p1 == p2)
+          forAll(multiplications): (s, x1, y1, x2, y2) =>
+            val p1 = Point[C, A, B](FieldElement(x1), FieldElement(y1))
+            val p2 =
+              if x2 < 0 then Point.atInfinity[C, A, B]
+              else Point[C, A, B](FieldElement(x2), FieldElement(y2))
+
+            assert(s * p1 == p2)

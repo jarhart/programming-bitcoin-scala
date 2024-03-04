@@ -1,9 +1,8 @@
 package tx
 
-import org.scalatest.funspec.AnyFunSpec
-import org.scalatest.BeforeAndAfterAll
-
 import helper.*
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.funspec.AnyFunSpec
 
 class TxSpec extends AnyFunSpec with BeforeAndAfterAll:
 
