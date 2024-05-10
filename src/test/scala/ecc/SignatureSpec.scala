@@ -13,7 +13,7 @@ class SignatureSpec extends AnyFunSpec with ScalaCheckPropertyChecks:
       val randomSignatures = Seq.fill(10):
         Signature(BigInt(256, Random), BigInt(255, Random))
 
-      val signatures = Table("sig", (Signature(1, 2) +: randomSignatures): _*)
+      val signatures = Table("sig", (Signature(1, 2) +: randomSignatures)*)
 
       forAll(signatures): sig =>
         assert(sig == Signature.parse(sig.der))

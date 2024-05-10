@@ -6,7 +6,7 @@ object LittleEndian:
     Decoder take length map toInt
 
   def encode(i: BigInt, length: Int) =
-    Encoder tell fromInt(i, length)
+    Encoder.tell(fromInt(i, length))
 
   def parse(length: Int) = Decoder.run(decode(length))
 

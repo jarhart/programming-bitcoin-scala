@@ -35,7 +35,7 @@ object Script:
   import OpCode.*
 
   @targetName("wrap")
-  def apply(cmds: Seq[Cmd]): Script = Script(cmds: _*)
+  def apply(cmds: Seq[Cmd]): Script = Script(cmds*)
 
   def p2pkh(h160: Array[Byte]) =
     Script(OP_DUP, OP_HASH160, h160, OP_EQUALVERIFY, OP_CHECKSIG)

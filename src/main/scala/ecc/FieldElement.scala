@@ -18,9 +18,9 @@ final case class FieldElement[P <: BigInt: ValueOf](val num: BigInt):
 
   def /(that: FieldElement[P]) = this * that.pow(prime - 2)
 
-  def pow(exp: BigInt) = FieldElement[P](num.modPow(exp, prime))
+  infix def pow(exp: BigInt) = FieldElement[P](num.modPow(exp, prime))
 
-  def rmul(coeff: BigInt) = mod_p(this.num * coeff)
+  infix def rmul(coeff: BigInt) = mod_p(this.num * coeff)
 
   private def mod_p(i: BigInt) = FieldElement[P](i mod prime)
 

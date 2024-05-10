@@ -11,7 +11,7 @@ object Decoder:
 
   def pure[A](x: A): Decoder[A] = State.pure(x)
 
-  def take(n: Int): Decoder[LazyList[Byte]] = State(_.splitAt(n).swap)
+  infix def take(n: Int): Decoder[LazyList[Byte]] = State(_.splitAt(n).swap)
 
   val head: Decoder[Byte] = take(1) map (_.head)
 
