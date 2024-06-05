@@ -23,9 +23,11 @@ lazy val root = project
                                 |import ecc._
                                 |import helper._
                                 |import tx._
+                                |import tx.script._
                                 |import play.api.libs.json._
                                 |import java.util.HexFormat
                                 |val hexFormat = HexFormat.of()
                                 |import hexFormat.{formatHex, parseHex}
+                                |TxFetcher.loadCache("tx.cache")
                                 |""".stripMargin
   )

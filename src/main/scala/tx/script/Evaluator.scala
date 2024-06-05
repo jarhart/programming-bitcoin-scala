@@ -8,7 +8,11 @@ type Cmd = OpCode | Elem
 
 type Elem = Array[Byte]
 
-final case class Evaluator(stack: Stack, altStack: Stack, cmds: Seq[Cmd]):
+final case class Evaluator(
+    stack: Stack,
+    altStack: Stack,
+    cmds: Seq[Cmd]
+):
   def run(z: BigInt): Option[BigInt] = Evaluator.eval run z runA this
 
 object Evaluator:

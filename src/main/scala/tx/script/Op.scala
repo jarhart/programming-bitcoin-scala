@@ -21,6 +21,9 @@ object Op:
     case opCode: OpCode => byOpCode.getOrElse(opCode, fail)
     case elem: Elem     => push(elem)
 
+  def runS[A](op: Op[A])(stack: Stack, z: BigInt = 0): Option[Stack] =
+    op.run(z).runS(Evaluator(stack, Nil, Seq.empty[Cmd])) map (_.stack)
+
   def pure[A](x: A): Op[A] = ReaderT.pure(x)
 
   def fail[A] = Op[A](_ => _ => None)

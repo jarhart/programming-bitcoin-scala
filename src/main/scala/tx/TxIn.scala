@@ -1,11 +1,12 @@
 package tx
 
 import helper.*
+import cats.syntax.traverse.*
 
 case class TxIn(
     prevTx: Array[Byte],
     prevIndex: BigInt,
-    scriptSig: Script,
+    scriptSig: Script = Script(),
     sequence: BigInt = BigInt("ffffffff", 16)
 ):
   val encode =
@@ -26,9 +27,6 @@ case class TxIn(
 
   def scriptPubkey(testnet: Boolean = false): Script =
     fetchTx(testnet).outputs(prevIndex.toInt).script
-
-  def replaceScriptSigWithPubkey(testnet: Boolean = false): TxIn =
-    copy(scriptSig = scriptPubkey(testnet))
 
 object TxIn:
   val decode: Decoder[TxIn] =

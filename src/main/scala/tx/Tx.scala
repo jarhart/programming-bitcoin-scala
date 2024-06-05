@@ -34,35 +34,44 @@ final case class Tx(
 
   def verify: Boolean = (fee >= 0) && (inputs.indices forall verifyInput)
 
-  def signInput(inputIndex: Int, privateKey: PrivateKey): Tx =
+  def signInput(inputIndex: Int, privateKey: PrivateKey): (Tx, Boolean) =
     val z = sigHash(inputIndex)
     val der = privateKey.sign(z).der
-    val sig = der ++ SIGHASH_ALL.toByteArray
+    val sig = der ++ toBytes(SIGHASH_ALL, 1)
     val sec = privateKey.point.sec()
     val updatedTxIn = inputs(inputIndex).copy(scriptSig = Script(sig, sec))
-    copy(inputs = inputs.updated(inputIndex, updatedTxIn))
+    val signed = copy(inputs = inputs.updated(inputIndex, updatedTxIn))
+    (signed, signed.verifyInput(inputIndex))
+
+  def encodeSigHash(inputIndex: Int) =
+    for
+      _ <- LittleEndian.encode(version, 4)
+      _ <- VarInt.encode(inputs.length)
+      _ <- inputs.zipWithIndex traverse: (txIn, i) =>
+        txIn
+          .copy(scriptSig =
+            if i == inputIndex then txIn.scriptPubkey(testnet)
+            else Script()
+          )
+          .encode
+      _ <- VarInt.encode(outputs.length)
+      _ <- outputs traverse (_.encode)
+      _ <- LittleEndian.encode(locktime, 4)
+      _ <- LittleEndian.encode(SIGHASH_ALL, 4)
+    yield ()
 
   def sigHash(inputIndex: Int): BigInt =
-    LittleEndian.toInt:
-      hash256:
-        replaceScriptSigWithPubkey(inputIndex).serialize
-          ++ toBytes(SIGHASH_ALL, 4)
-
-  def verifyInput(inputIndex: Int): Boolean =
-    val input = inputs(inputIndex)
-    (input.scriptSig ++ input.scriptPubkey(testnet))
-      .evaluate(sigHash(inputIndex))
-
-  def replaceScriptSigWithPubkey(inputIndex: Int): Tx =
-    copy(inputs =
-      inputs.updated(
-        inputIndex,
-        inputs(inputIndex).replaceScriptSigWithPubkey(testnet)
-      )
+    unsignedFromBytes(
+      hash256(encodeSigHash(inputIndex).written.toArray)
     )
 
+  def verifyInput(inputIndex: Int): Boolean =
+    val txIn = inputs(inputIndex)
+    val scriptPubkey = txIn.scriptPubkey(testnet)
+    (txIn.scriptSig ++ scriptPubkey).evaluate(sigHash(inputIndex))
+
 object Tx:
-  val decode: Decoder[Tx] =
+  def decode(testnet: Boolean = false): Decoder[Tx] =
     for
       version <- LittleEndian.decode(4)
       numInputs <- VarInt.decode map (_.toInt)
@@ -70,6 +79,7 @@ object Tx:
       numOutputs <- VarInt.decode map (_.toInt)
       outputs <- Decoder.times(numOutputs)(TxOut.decode)
       locktime <- LittleEndian.decode(4)
-    yield Tx(version, inputs, outputs, locktime)
+    yield Tx(version, inputs, outputs, locktime, testnet)
 
-  val parse = Decoder.run(decode)
+  def parse(input: IterableOnce[Byte], testnet: Boolean = false) =
+    Decoder.run(decode(testnet))(input)

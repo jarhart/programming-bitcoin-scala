@@ -157,7 +157,7 @@ object Ops:
     case stack @ (e :: _) => (Num.encode(e.length) :: stack)
 
   val opEqual = binary: (element1, element2) =>
-    Num.encode(if element1 == element2 then 1 else 0)
+    Num.encode(if element1.toSeq == element2.toSeq then 1 else 0)
 
   val opEqualVerify = opEqual >> opVerify
 
@@ -216,15 +216,22 @@ object Ops:
 
   val opCheckSig = liftZU: (stack, z) =>
     for
-      pk <- stack.headOption flatMap S256Point.parse
-      sig <- stack.tail.headOption map Signature.parse
-      verified = S256Point.verify(pk, z, sig)
+      (pk, s2) <- stack.flatPopWith(S256Point.parse)
+      (sig, s3) <- s2.popWith(s => Signature.parse(s.dropRight(1)))
+      verified = (S256Point.verify(pk, z, sig))
       result = Num.encode(if verified then 1 else 0)
-    yield result :: stack.drop(2)
+    yield result :: s3
 
   val opCheckSigVerify = opCheckSig >> opVerify
 
-  val opCheckMultisig = Op[Unit](_ => ???)
+  val opCheckMultisig = liftZU: (stack, z) =>
+    for
+      (n, s2) <- stack.popWith(Num.decode(_).toInt)
+      (pks, s3) <- s2.popWith(n)(_.reverse)
+      (m, s4) <- s3.popWith(Num.decode(_).toInt)
+      (sigs, s5) <- s4.popWith(n)(_.reverse)
+      (_, s6) <- s5.pop()
+    yield s6
 
   val opCheckMultisigVerify = opCheckMultisig >> opVerify
 
