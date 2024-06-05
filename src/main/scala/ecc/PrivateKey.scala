@@ -17,9 +17,9 @@ final case class PrivateKey(secret: BigInt):
     new String(Array.fill(64 - s.length())('0')) ++ s
 
   def sign(z: BigInt, rnd: Random = Random): Signature =
-    val (k, r) = randomKeyPair(rnd)
+    val (k, r) = deterministicKeyPair(z)
     val kInv = k.modPow(n - 2, n)
-    val s = (z + r * secret) * kInv.mod(n)
+    val s = ((z + r * secret) * kInv).mod(n)
     Signature(r, if s > n / 2 then n - s else s)
 
   def wif(compressed: Boolean = true, testnet: Boolean = false) =

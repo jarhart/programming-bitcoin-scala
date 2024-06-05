@@ -26,8 +26,8 @@ def hmacSHA256(secret: String, message: String): String =
   String(hmacSHA256(secret.getBytes(), message.getBytes()))
 
 def hmacSHA256(secret: Array[Byte], message: Array[Byte]): Array[Byte] =
-  val secretKey = SecretKeySpec(secret, "SHA256")
-  val mac = Mac.getInstance("SHA256")
+  val secretKey = SecretKeySpec(secret, "HmacSHA256")
+  val mac = Mac.getInstance("HmacSHA256")
   mac.init(secretKey)
   mac.doFinal(message)
 
