@@ -2,6 +2,7 @@ package tx.script
 
 import cats.data.*
 import cats.syntax.flatMap.*
+import cats.syntax.traverse.*
 
 import ecc.*
 import helper.*
@@ -28,89 +29,155 @@ object Op:
 
   def fail[A] = Op[A](_ => _ => None)
 
-  val head: Op[Elem] = lift(stack => stack.headOption map ((stack.tail, _)))
-
-  val result: Op[BigInt] = head map Num.decode
+  val ask: Op[BigInt] = ReaderT.ask
 
   val next: Op[Option[Op[Unit]]] = liftC:
-    case (stack, Seq(cmd, cmds*)) => (stack, cmds, Some(Op(cmd)))
-    case (stack, cmds)            => (stack, cmds, None)
+    case Seq(cmd, cmds*) => (cmds, Some(Op(cmd)))
+    case cmds            => (cmds, None)
 
   def push(elem: Elem) = liftU:
     case stack => elem :: stack
 
   def push(num: BigInt): Op[Unit] = push(Num.encode(num))
 
-  def unary(f: Elem => Elem) = liftU:
-    case a :: stack => f(a) :: stack
+  def push(i: Int): Op[Unit] = push(BigInt(i))
+
+  def push(b: Boolean): Op[Unit] = push(if b then 1 else 0)
+
+  def push(elems: List[Elem]) = liftU: stack =>
+    Some(elems ++ stack)
+
+  val peek: Op[Elem] = lift[Elem]:
+    case stack @ (a :: _) => (stack, a)
+
+  def peek(n: Int) = lift[List[Elem]]: stack =>
+    Option.when(stack.size >= n):
+      (stack, stack.take(n))
+
+  def peekAt(n: Int) = lift[Elem]: stack =>
+    Option.when(stack.isDefinedAt(n)):
+      (stack, stack(n))
+
+  val pop = lift[Elem]:
+    case a :: stack => (stack, a)
+
+  def pop(n: Int) = lift[List[Elem]]: stack =>
+    Option.when(stack.size >= n):
+      stack.splitAt(n) match
+        case (r, s) => (s, r)
+
+  def popAt(n: Int) = lift[Elem]: stack =>
+    Option.when(stack.size >= n):
+      stack.splitAt(n) match
+        case (xs, ys) => (xs ++ ys.tail, ys.head)
+
+  def popMap[A](f: Elem => A): Op[A] = pop map f
+
+  def popMap[A](n: Int)(f: Elem => A): Op[List[A]] =
+    pop(n) map (_ map f)
+
+  def popMapOpt[A](f: Elem => Option[A]) = lift[A]:
+    _ match
+      case a :: stack => f(a) map ((stack, _))
+      case _          => None
+
+  def popMapOpt[A](n: Int)(f: Elem => Option[A]) = lift[List[A]]: stack =>
+    Option
+      .when(stack.size >= n):
+        stack splitAt n match
+          case (r, s) => (s, r)
+      .flatMap: (s, elems) =>
+        elems traverse f map:
+          (s, _)
+
+  val popBigInt: Op[BigInt] = popMap(Num.decode)
+
+  val popInt: Op[Int] = popBigInt map (_.toInt)
+
+  val popS256Point: Op[S256Point] = popMapOpt(S256Point.parse)
+
+  def popS256Points(n: Int): Op[List[S256Point]] = popMapOpt(n)(S256Point.parse)
+
+  val popSignature: Op[Signature] = popMap(s => Signature.parse(s dropRight 1))
+
+  def popSignatures(n: Int): Op[List[Signature]] =
+    popMap(n)(s => Signature.parse(s dropRight 1))
+
+  val altPop = liftS[Elem]:
+    case a :: stack => (stack, a)
+
+  def altPush(elem: Elem) = liftS[Unit]:
+    case stack => (elem :: stack, ())
+
+  val result: Op[BigInt] = pop map Num.decode
+
+  val stackDepth: Op[Int] = lift[Int]: stack =>
+    Some(stack, stack.length)
+
+  val popCmd: Op[Cmd] = liftC:
+    case Seq(cmd, cmds*) => (cmds, cmd)
+
+  def pushCmd(cmd: Cmd): Op[Unit] = liftC:
+    cmds => Some(cmd +: cmds, ())
+
+  def pushBranch(branch: Seq[Cmd]): Op[Unit] = liftC:
+    cmds => Some(branch ++ cmds, ())
+
+  def unary(f: Elem => Elem) = for
+    e <- pop
+    _ <- push(f(e))
+  yield ()
 
   def intUnary(f: BigInt => BigInt) = unary(a => Num.encode(f(Num.decode(a))))
 
-  def binary(f: (Elem, Elem) => Elem) = liftU:
-    case a :: b :: stack => f(a, b) :: stack
+  def binary(f: (Elem, Elem) => Elem) = for
+    List(a, b) <- pop(2)
+    _ <- push(f(a, b))
+  yield ()
 
   def intBinary(f: (BigInt, BigInt) => BigInt) =
     binary((x, y) => Num.encode(f(Num.decode(x), Num.decode(y))))
 
-  def trinary(f: (Elem, Elem, Elem) => Elem) = liftU:
-    case a :: b :: c :: stack => f(a, b, c) :: stack
+  def trinary(f: (Elem, Elem, Elem) => Elem) = for
+    List(a, b, c) <- pop(3)
+    _ <- push(f(a, b, c))
+  yield ()
 
   def intTrinary(f: (BigInt, BigInt, BigInt) => BigInt) =
     trinary: (x, y, z) =>
       Num.encode(f(Num.decode(x), Num.decode(y), Num.decode(z)))
 
-  def lift[A](f: Stack => Option[(Stack, A)]) = liftM:
+  private def lift[A](f: Stack => Option[(Stack, A)]) = liftM:
     case m @ Evaluator(stack, _, _) =>
       f(stack) map { case (s, x) => (m.copy(stack = s), x) }
 
-  def lift[A](pf: PartialFunction[Stack, (Stack, A)]): Op[A] = lift(pf.lift)
+  private def lift[A](pf: PartialFunction[Stack, (Stack, A)]): Op[A] =
+    lift(pf.lift)
 
-  def liftU(f: Stack => Option[Stack]) = liftM:
+  private def liftS[A](f: Stack => Option[(Stack, A)]) = liftM:
+    case m @ Evaluator(_, stack, _) =>
+      f(stack) map { case (s, x) => (m.copy(stack = s), x) }
+
+  private def liftS[A](pf: PartialFunction[Stack, (Stack, A)]): Op[A] =
+    liftS(pf.lift)
+
+  private def liftU(f: Stack => Option[Stack]) = liftM:
     case m @ Evaluator(stack, _, _) =>
       f(stack) map (s => (m.copy(stack = s), ()))
 
-  def liftU(pf: PartialFunction[Stack, Stack]): Op[Unit] = liftU(pf.lift)
+  private def liftU(pf: PartialFunction[Stack, Stack]): Op[Unit] =
+    liftU(pf.lift)
 
-  def liftC[A](f: (Stack, Seq[Cmd]) => Option[(Stack, Seq[Cmd], A)]) = liftM:
-    case m @ Evaluator(stack, _, cmds) =>
-      f(stack, cmds) map:
-        case (s, c, x) => (m.copy(stack = s, cmds = c), x)
+  private def liftC[A](f: (Seq[Cmd]) => Option[(Seq[Cmd], A)]) = liftM:
+    case m @ Evaluator(_, _, cmds) =>
+      f(cmds) map:
+        case (c, x) => (m.copy(cmds = c), x)
 
-  def liftC[A](
-      pf: PartialFunction[(Stack, Seq[Cmd]), (Stack, Seq[Cmd], A)]
-  ): Op[A] =
-    liftC: (stack, cmds) =>
-      Option.when(pf.isDefinedAt((stack, cmds)))(pf((stack, cmds)))
+  private def liftC[A](pf: PartialFunction[(Seq[Cmd]), (Seq[Cmd], A)]): Op[A] =
+    liftC(pf.lift)
 
-  def liftCU(f: (Stack, Seq[Cmd]) => Option[(Stack, Seq[Cmd])]) = liftM:
-    case m @ Evaluator(stack, _, cmds) =>
-      f(stack, cmds) map:
-        case (s, c) => (m.copy(stack = s, cmds = c), ())
-
-  def liftCU(
-      pf: PartialFunction[(Stack, Seq[Cmd]), (Stack, Seq[Cmd])]
-  ): Op[Unit] =
-    liftCU: (stack, cmds) =>
-      Option.when(pf.isDefinedAt((stack, cmds)))(pf((stack, cmds)))
-
-  def liftSU(f: (Stack, Stack) => Option[(Stack, Stack)]) = liftM:
-    case m @ Evaluator(stack, altStack, _) =>
-      f(stack, altStack) map:
-        case (s, a) => (m.copy(stack = s, altStack = a), ())
-
-  def liftSU(pf: PartialFunction[(Stack, Stack), (Stack, Stack)]): Op[Unit] =
-    liftSU: (stack, altStack) =>
-      Option.when(pf.isDefinedAt((stack, altStack)))(pf((stack, altStack)))
-
-  def liftZU(f: (Stack, BigInt) => Option[Stack]) = Op[Unit]: z =>
-    case m @ Evaluator(stack, _, _) =>
-      f(stack, z) map (s => (m.copy(stack = s), ()))
-
-  def liftZU(pf: PartialFunction[(Stack, BigInt), Stack]): Op[Unit] =
-    liftZU((stack, z) => Option.when(pf.isDefinedAt((stack, z)))(pf(stack, z)))
-
-  def liftM[A](f: Evaluator => Option[(Evaluator, A)]) =
+  private def liftM[A](f: Evaluator => Option[(Evaluator, A)]) =
     Op[A](Function.const(f))
 
-  def liftM[A](pf: PartialFunction[Evaluator, (Evaluator, A)]): Op[A] =
+  private def liftM[A](pf: PartialFunction[Evaluator, (Evaluator, A)]): Op[A] =
     liftM(pf.lift)

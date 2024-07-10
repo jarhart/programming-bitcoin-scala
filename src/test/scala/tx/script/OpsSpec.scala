@@ -8,33 +8,66 @@ class OpsSpec extends AnyFunSpec:
   describe("op0"):
     it("pushes a 0 onto the stack"):
       Op.runS(Ops.op0)(Nil) match
-        case Some(List(e)) => assert(Num.decode(e) == BigInt(0))
+        case Some(List(e)) => assert(Num.decode(e) == 0)
         case None          => fail("Op failed")
 
   describe("op1negate"):
     it("pushes a -1 onto the stack"):
       Op.runS(Ops.op1negate)(Nil) match
-        case Some(List(e)) => assert(Num.decode(e) == BigInt(-1))
+        case Some(List(e)) => assert(Num.decode(e) == -1)
         case None          => fail("Op failed")
 
   describe("op16"):
     it("pushes a 16 onto the stack"):
       Op.runS(Ops.op16)(Nil) match
-        case Some(List(e)) => assert(Num.decode(e) == BigInt(16))
+        case Some(List(e)) => assert(Num.decode(e) == 16)
         case None          => fail("Op failed")
+
+  describe("opDrop"):
+    it("drops an item from the stack"):
+      val stack = List(2, 5) map (BigInt(_).toByteArray)
+      Op.runS(Ops.opDrop)(stack) match
+        case Some(List(e)) => assert(Num.decode(e) == 5)
+        case None          => fail("Op failed")
+
+  describe("opDup"):
+    it("duplicates the item on the top of the stack"):
+      val stack = List(2, 5) map (BigInt(_).toByteArray)
+      Op.runS(Ops.opDup)(stack) match
+        case Some(List(a, b, _)) =>
+          assert(Num.decode(a) == 2 && Num.decode(b) == 2)
+        case None => fail("Op failed")
+
+  describe("op2drop"):
+    it("drops 2 items from the stack"):
+      val stack = List(2, 5, 9) map (BigInt(_).toByteArray)
+      Op.runS(Ops.op2drop)(stack) match
+        case Some(List(e)) => assert(Num.decode(e) == 9)
+        case None          => fail("Op failed")
+
+  describe("op2dup"):
+    it("duplicates 2 items on the top of the stack"):
+      val stack = List(2, 5, 9) map (BigInt(_).toByteArray)
+      Op.runS(Ops.op2dup)(stack) match
+        case Some(List(a, b, c, d, _)) =>
+          assert(
+            Num.decode(a) == 2 && Num.decode(b) == 5
+              && Num.decode(c) == 2 && Num.decode(d) == 5
+          )
+        case None => fail("Op failed")
 
   describe("op1add"):
     it("adds 1 to the value at the top of the stack"):
       val stack = List(BigInt(3).toByteArray)
       Op.runS(Ops.op1add)(stack) match
-        case Some(List(e)) => assert(Num.decode(e) == BigInt(4))
+        case Some(List(e)) => assert(Num.decode(e) == 4)
         case None          => fail("Op failed")
 
   describe("opAdd"):
     it("adds 2 values at the top of the stack"):
       val stack = List(BigInt(3).toByteArray, BigInt(4).toByteArray)
       Op.runS(Ops.opAdd)(stack) match
-        case Some(List(e)) => assert(Num.decode(e) == BigInt(7))
+        case Some(List(e)) => assert(Num.decode(e) == 7)
         case None          => fail("Op failed")
 
   describe("opHash160"):

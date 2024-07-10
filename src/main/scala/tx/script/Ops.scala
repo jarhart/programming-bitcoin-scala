@@ -7,7 +7,7 @@ import math.*
 
 import cats.syntax.flatMap.*
 
-object Ops:
+object Ops extends PopBranches:
   import Op.*
 
   val op0 = push(0)
@@ -29,135 +29,102 @@ object Ops:
   val op15 = push(15)
   val op16 = push(16)
 
-  val opNop = liftU(Some(_))
+  val opNop = pure(())
 
-  val opIf = liftCU: (stack, cmds) =>
-    val items = mutable.Buffer[Cmd](cmds*)
-    val trueItems = mutable.Buffer[Cmd]()
-    val falseItems = mutable.Buffer[Cmd]()
-    var currentItems: mutable.Buffer[Cmd] = trueItems
-    var found = false
-    var numEndifsNeeded = 1
+  val opIf = for
+    i <- popBigInt
+    (trueBranch, falseBranch) <- popBranches
+    _ <- pushBranch(if i == 0 then falseBranch else trueBranch)
+  yield ()
 
-    while items.nonEmpty && !found do
-      val item = items.remove(0)
-      if item == OP_IF || item == OP_NOTIF then
-        numEndifsNeeded += 1
-        currentItems += item
-      else if numEndifsNeeded == 1 && item == OP_ELSE then
-        currentItems = falseItems
-      else if item == OP_ENDIF then
-        if numEndifsNeeded == 1 then found = true
-        else
-          numEndifsNeeded -= 1
-          currentItems += item
-      else currentItems += item
+  val opNotIf = for
+    i <- popBigInt
+    (trueBranch, falseBranch) <- popBranches
+    _ <- pushBranch(if i == 0 then trueBranch else falseBranch)
+  yield ()
 
-    Option.when(found)(stack) collect:
-      case e :: stack =>
-        (stack, (if (Num.decode(e) == 0) then falseItems else trueItems).toSeq)
+  val opVerify = for
+    i <- popBigInt
+    _ <- if i == 0 then fail else pure(())
+  yield ()
 
-  val opNotIf = liftCU: (stack, cmds) =>
-    val items = mutable.Buffer[Cmd](cmds*)
-    val trueItems = mutable.Buffer[Cmd]()
-    val falseItems = mutable.Buffer[Cmd]()
-    var currentItems: mutable.Buffer[Cmd] = trueItems
-    var found = false
-    var numEndifsNeeded = 1
+  val opReturn = fail[Unit]
 
-    while items.nonEmpty && !found do
-      val item = items.remove(0)
-      if item == OP_IF || item == OP_NOTIF then
-        numEndifsNeeded += 1
-        currentItems += item
-      else if numEndifsNeeded == 1 && item == OP_ELSE then
-        currentItems = falseItems
-      else if item == OP_ENDIF then
-        if numEndifsNeeded == 1 then found = true
-        else
-          numEndifsNeeded -= 1
-          currentItems += item
-      else currentItems += item
+  val opToAltStack = pop >>= altPush
 
-    Option.when(found)(stack) collect:
-      case e :: stack =>
-        (stack, (if (Num.decode(e) == 0) then trueItems else falseItems).toSeq)
+  val opFromAltStack = altPop >>= push
 
-  val opVerify = liftU:
-    case element :: stack if Num.decode(element) != 0 => stack
+  val op2drop = for
+    _ <- pop
+    _ <- pop
+  yield ()
 
-  val opReturn = liftU(_ => None)
+  val op2dup = peek(2) >>= push
 
-  val opToAltStack = liftSU:
-    case (x :: stack, altStack) => (stack, x :: altStack)
+  val op3dup = peek(3) >>= push
 
-  val opFromAltStack = liftSU:
-    case (stack, x :: altStack) => (x :: stack, altStack)
+  val op2over = for
+    List(_, _, a, b) <- peek(4)
+    _ <- push(List(a, b))
+  yield ()
 
-  val op2drop = liftU:
-    case _ :: _ :: stack => stack
+  val op2rot = for
+    List(a, b, c, d, e, f) <- pop(6)
+    _ <- push(List(e, f, a, b, c, d))
+  yield ()
 
-  val op2dup = liftU:
-    case stack @ (a :: b :: _) => (a :: b :: stack)
+  val op2swap = for
+    List(a, b, c, d) <- pop(4)
+    _ <- push(List(c, d, a, b))
+  yield ()
 
-  val op3dup = liftU:
-    case stack @ (a :: b :: c :: _) => (a :: b :: c :: stack)
+  val opIfDup = for
+    n <- popBigInt
+    _ <- if n == 0 then pure(()) else push(n)
+  yield ()
 
-  val op2over = liftU:
-    case stack @ (_ :: _ :: a :: b :: _) => (a :: b :: stack)
+  val opDepth = stackDepth >>= push
 
-  val op2rot = liftU:
-    case a :: b :: c :: d :: e :: f :: stack =>
-      e :: f :: a :: b :: c :: d :: stack
+  val opDrop = pop map (_ => ())
 
-  val op2swap = liftU:
-    case a :: b :: c :: d :: stack => (c :: d :: a :: b :: stack)
+  val opDup = peek >>= push
 
-  val opIfDup = liftU:
-    case e :: stack => (if Num.decode(e) == 0 then stack else e :: stack)
+  val opNip = for
+    List(e, _) <- pop(2)
+    _ <- push(e)
+  yield ()
 
-  val opDepth = liftU:
-    case stack => (Num.encode(stack.length) :: stack)
+  val opOver = for
+    List(_, e, _) <- pop(3)
+    _ <- push(e)
+  yield ()
 
-  val opDrop = liftU:
-    case _ :: stack => stack
+  val opPick = popInt >>= peekAt >>= push
 
-  val opDup = liftU:
-    case stack @ (e :: _) => (e :: stack)
+  val opRoll = popInt >>= popAt >>= push
 
-  val opNip = liftU:
-    case a :: _ :: stack => (a :: stack)
+  val opRot = for
+    List(a, b, c) <- pop(3)
+    _ <- push(List(c, a, b))
+  yield ()
 
-  val opOver = liftU:
-    case stack @ (_ :: a :: _) => (a :: stack)
+  val opSwap = pop(2) map (_.reverse) >>= push
 
-  val opPick = liftU: stack =>
-    for
-      e <- stack.headOption; n = Num.decode(e).toInt
-      if stack.tail.isDefinedAt(n)
-    yield (stack.tail(n) :: stack.tail)
+  val opTuck = for
+    a <- pop
+    b <- peek
+    _ <- push(List(a, b))
+  yield ()
 
-  val opRoll = liftU: stack =>
-    for
-      e <- stack.headOption; n = Num.decode(e).toInt
-      if stack.tail.isDefinedAt(n)
-    yield stack.tail.splitAt(n) match
-      case (s1, s2) => (s2.head :: s1 ++ s2.tail)
+  val opSize = for
+    e <- peek
+    _ <- push(e.length)
+  yield ()
 
-  val opRot = liftU:
-    case a :: b :: c :: stack => (c :: a :: b :: stack)
-
-  val opSwap = liftU:
-    case a :: b :: stack => (b :: a :: stack)
-
-  val opTuck = liftU:
-    case a :: b :: stack => (a :: b :: b :: stack)
-
-  val opSize = liftU:
-    case stack @ (e :: _) => (Num.encode(e.length) :: stack)
-
-  val opEqual = binary: (element1, element2) =>
-    Num.encode(if element1.toSeq == element2.toSeq then 1 else 0)
+  val opEqual = for
+    List(a, b) <- pop(2)
+    _ <- push(if a.toSeq == b.toSeq then 1 else 0)
+  yield ()
 
   val opEqualVerify = opEqual >> opVerify
 
@@ -214,24 +181,24 @@ object Ops:
 
   val opHash256 = unary(hash256)
 
-  val opCheckSig = liftZU: (stack, z) =>
-    for
-      (pk, s2) <- stack.flatPopWith(S256Point.parse)
-      (sig, s3) <- s2.popWith(s => Signature.parse(s.dropRight(1)))
-      verified = (S256Point.verify(pk, z, sig))
-      result = Num.encode(if verified then 1 else 0)
-    yield result :: s3
+  val opCheckSig = for
+    z <- ask
+    pk <- popS256Point
+    sig <- popSignature
+    _ <- push(S256Point.verify(pk, z, sig))
+  yield ()
 
   val opCheckSigVerify = opCheckSig >> opVerify
 
-  val opCheckMultisig = liftZU: (stack, z) =>
-    for
-      (n, s2) <- stack.popWith(Num.decode(_).toInt)
-      (pks, s3) <- s2.popWith(n)(_.reverse)
-      (m, s4) <- s3.popWith(Num.decode(_).toInt)
-      (sigs, s5) <- s4.popWith(n)(_.reverse)
-      (_, s6) <- s5.pop()
-    yield s6
+  val opCheckMultisig = for
+    z <- ask
+    n <- popInt
+    pks <- popS256Points(n)
+    m <- popInt
+    sigs <- popSignatures(n)
+    _ <- pop
+    _ <- push(pks forall (pk => sigs exists (S256Point.verify(pk, z, _))))
+  yield ()
 
   val opCheckMultisigVerify = opCheckMultisig >> opVerify
 
@@ -326,3 +293,38 @@ object Ops:
     OP_NOP9 -> opNop,
     OP_NOP10 -> opNop
   )
+
+trait PopBranches:
+  import Op.*
+
+  private val popToEndif: Op[Seq[Cmd]] =
+    popCmd flatMap:
+      case OP_ENDIF =>
+        pure(Seq())
+      case cmd @ (OP_IF | OP_NOTIF) =>
+        for
+          ifCmds <- popIf(cmd)
+          cmds <- popToEndif
+        yield (ifCmds ++ cmds)
+      case cmd =>
+        popToEndif map (cmd +: _)
+
+  private def popIf(ifCmd: Cmd): Op[Seq[Cmd]] =
+    popToEndif map:
+      ifCmd +: _ :+ OP_ENDIF
+
+  protected val popBranches: Op[(Seq[Cmd], Seq[Cmd])] =
+    popCmd flatMap:
+      case OP_ELSE =>
+        popToEndif map: falseBranch =>
+          (Seq(), falseBranch)
+      case OP_ENDIF =>
+        pure((Seq(), Seq()))
+      case cmd @ (OP_IF | OP_NOTIF) =>
+        for
+          ifCmds <- popIf(cmd)
+          (trueBranch, falseBranch) <- popBranches
+        yield (ifCmds ++ trueBranch, falseBranch)
+      case cmd =>
+        popBranches map: (trueBranch, falseBranch) =>
+          (cmd +: trueBranch, falseBranch)

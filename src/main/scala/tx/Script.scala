@@ -28,8 +28,7 @@ case class Script(cmds: Cmd*):
 
   def serialize = encode.written.toArray
 
-  def evaluate(z: BigInt): Boolean =
-    Evaluator.run(cmds, z) exists (_ != BigInt(0))
+  def evaluate(z: BigInt): Boolean = Evaluator.run(cmds, z) exists (_ != 0)
 
 object Script:
   import OpCode.*
